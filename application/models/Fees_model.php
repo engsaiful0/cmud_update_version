@@ -87,9 +87,6 @@ class Fees_model extends MY_Model
         $deposit_through_office_accounting = $this->fees_model->getStudentFeeDepositThroughOfficeAccount($roll);
         $deposit_through_office_accounting_value = $deposit_through_office_accounting['total_amount'];
         $status = "";
-        $sql = "SELECT SUM(`fee_groups_details`.`amount`) as `total`, min(`fee_allocation`.`id`) as `inv_no` FROM `fee_allocation` LEFT JOIN `fee_groups_details` ON `fee_groups_details`.`fee_groups_id` = `fee_allocation`.`group_id` LEFT JOIN `fees_type` ON `fees_type`.`id` = `fee_groups_details`.`fee_type_id` WHERE `fee_allocation`.`student_id` = " . $this->db->escape($studentID) . " AND `fee_allocation`.`session_id` = " . $this->db->escape(get_session_id());
-        $balance = $this->db->query($sql)->row_array();
-        $invNo = str_pad($balance['inv_no'], 4, '0', STR_PAD_LEFT);
 
         $sql = "SELECT IFNULL(SUM(`fee_payment_history`.`amount`), 0) as `amount`, IFNULL(SUM(`fee_payment_history`.`discount`), 0) as `discount`, IFNULL(SUM(`fee_payment_history`.`fine`), 0) as `fine` FROM `fee_payment_history`  WHERE `fee_payment_history`.`student_id` = " . $this->db->escape($studentID) . "";
         $paid = $this->db->query($sql)->row_array();

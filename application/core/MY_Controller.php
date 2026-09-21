@@ -7,6 +7,9 @@ class MY_Controller extends CI_Controller
     {
         parent::__construct();
 
+        $this->load->library('authorization');
+        $this->authorization->refreshIdentity();
+
         $this->output->set_header('Last-Modified: ' . gmdate("D, d M Y H:i:s") . ' GMT');
         $this->output->set_header('Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
         $this->output->set_header('Pragma: no-cache');
@@ -110,9 +113,11 @@ class Admin_Controller extends MY_Controller
     {
         parent::__construct();
         if (!is_loggedin()) {
+            if ($this->input->is_ajax_request()) { $this->authorization->deny(); }
             $this->session->set_userdata('redirect_url', current_url());
             redirect(base_url('authentication'), 'refresh');
         }
+        $this->authorization->enforce();
     }
 }
 

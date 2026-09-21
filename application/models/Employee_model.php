@@ -14,6 +14,14 @@ class Employee_model extends MY_Model
     // moderator employee all information
     public function save($data, $role = null, $id = null)
     {
+        if (!is_superadmin_loggedin()) {
+            if (empty($data['staff_id'])) { access_denied(); }
+            $target = $this->db->select('l.role, s.branch_id')->from('login_credential l')
+                ->join('staff s', 's.id = l.user_id')->where('s.id', $data['staff_id'])
+                ->where_not_in('l.role', array(6, 7))->get()->row_array();
+            if (!$target || (int) $target['role'] === 1 || (string) $target['branch_id'] !== (string) get_loggedin_branch_id()
+                || (string) $target['role'] !== (string) $data['user_role']) { access_denied(); }
+        }
         $inser_data1 = array(
             'branch_id' => $this->application_model->get_branch_id(),
             'name' => $data['name'],

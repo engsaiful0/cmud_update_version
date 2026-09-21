@@ -30,7 +30,10 @@
             <header class="panel-heading">
                 <h4 class="panel-title"><?= translate('select_ground') ?></h4>
             </header>
-            <?php echo form_open($this->uri->uri_string(), array('class' => 'validate')); ?>
+            <?php echo form_open('student/all_students', array('class' => 'validate', 'method' => 'get')); ?>
+            <?php if (is_superadmin_loggedin() && $branch_id !== ''): ?>
+                <input type="hidden" name="branch_id" value="<?= html_escape($branch_id) ?>">
+            <?php endif; ?>
             <div class="panel-body">
                 <div class="row mb-sm">
                     <?php if (is_superadmin_loggedin()) : ?>
@@ -38,12 +41,12 @@
                             <div class="form-group">
                                 <label class="control-label"><?= translate('Subject') ?> <span class="required">*</span></label>
                                 <select name="subject_id" class="form-control" data-plugin-selectTwo id="subject_holder" data-width="100%">
-                                    <option value="" selected>Select Subject</option>
+                                    <option value="">Select Subject</option>
                                     <?php
                                     $subjects = $this->db->select('*')->from('subject')->order_by('name')->get()->result();
                                     foreach ($subjects as $subject) :
                                     ?>
-                                        <option value="<?= html_escape($subject->id) ?>"><?= $subject->name ?></option>
+                                        <option value="<?= html_escape($subject->id) ?>" <?= (string) $subject->id === $subject_id ? 'selected' : '' ?>><?= html_escape($subject->name) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -53,7 +56,7 @@
                         <div class="form-group">
                             <label class="control-label"><?= translate('batch') ?> <span class="required">*</span></label>
                             <select name="class_id" class="form-control" data-plugin-selectTwo id='class_id' data-width="100%">
-                                <option value="" selected>Select Batch</option>
+                                <option value="">Select Batch</option>
                                 <?php
 
                                 $classes = $this->db->select('*')->from('class')->order_by('name')->get()->result();
@@ -61,7 +64,7 @@
 
                                 foreach ($classes as $class) :
                                 ?>
-                                    <option value="<?= $class->id ?>" ?><?php echo $class->name?></option>
+                                    <option value="<?= html_escape($class->id) ?>" <?= (string) $class->id === $class_id ? 'selected' : '' ?>><?= html_escape($class->name) ?></option>
                                 <?php endforeach;
                                 ?>
                             </select>
@@ -71,7 +74,7 @@
 
                         <div class="form-group">
                             <label class="control-label">Student ID</label>
-                            <input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control">
+                            <input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control" value="<?= html_escape($roll) ?>">
                         </div>
 
                     </div>
@@ -95,7 +98,8 @@
                     <h4 class="panel-title"><i class="fas fa-user-graduate"></i> <?php echo translate('student_list'); ?></h4>
                 </header>
                 <div class="panel-body mb-md">
-                    <table class="table table-bordered table-condensed table-hover table-export">
+                    <div class="table-responsive">
+                    <table class="table table-bordered table-condensed table-hover">
                         <thead>
                             <tr>
 
@@ -115,7 +119,6 @@
                             <?php
 
                             foreach ($students as $row) :
-                                $fee_progress = $this->student_model->getFeeProgress($row['id']);
                             ?>
                                 <tr>
 
@@ -142,16 +145,19 @@
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
+                            <?php if (empty($students)): ?>
+                                <tr><td colspan="8" class="text-center">No students found.</td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
+                    </div>
                     <div class="pagination-data">
-                        <?php if ($pagination) : ?>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination justify-content-center">
-                                    <?php echo $pagination; ?>
-                                </ul>
-                            </nav>
-                        <?php endif; ?>
+                        <p class="text-muted">
+                            Showing <?= $student_total > 0 ? $student_offset + 1 : 0 ?>
+                            to <?= $student_offset + count($students) ?>
+                            of <?= $student_total ?> students
+                        </p>
+                        <?= $pagination ?>
                     </div>
 
                 </div>
@@ -223,12 +229,6 @@
         </footer>
     </section>
 </div>
-<style>
-  #DataTables_Table_0_paginate
-  {
-    display: none;
-  }
-</style>
 <?php if (get_permission('student', 'is_delete')) : ?>
     <script type="text/javascript">
         $(document).ready(function() {
@@ -259,7 +259,7 @@
                                 type: "POST",
                                 dataType: "JSON",
                                 data: {
-                                    array_id:
+                                    array_id: arrayID
                                 },
                                 success: function(data) {
                                     swal({

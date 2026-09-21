@@ -542,7 +542,7 @@ class Student_model extends MY_Model
       
         return $query->row_array();
     }
-    public function getAllStudents($roll = '', $branchID = '', $class_id = '', $subject_id = '', $limit = 10, $offset = 0)
+    public function getAllStudents($roll = '', $branchID = '', $class_id = '', $subject_id = '', $limit = 100, $offset = 0)
     {
         // Select columns you need
         $this->db->select('s.*, c.name as class_name,sub.name as subject_name');
@@ -572,7 +572,7 @@ class Student_model extends MY_Model
         $this->db->limit($limit, $offset);
 
         // Execute the query and return the result
-        $query = $this->db->order_by('s.roll', 'DESC')->get();
+        $query = $this->db->order_by('s.roll', 'DESC')->order_by('s.id', 'DESC')->get();
         return $query->result_array(); // or return $query->result(); for stdClass objects
     }
 

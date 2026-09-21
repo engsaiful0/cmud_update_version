@@ -10,7 +10,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
  * @filename : Ajax.php
  */
 
-class Ajax extends MY_Controller
+class Ajax extends Admin_Controller
 {
     public function __construct()
     {
@@ -96,6 +96,18 @@ class Ajax extends MY_Controller
     {
         $html = "";
         $table = $this->input->post('table');
+        $allowedTables = array('accounts', 'class', 'section', 'subject', 'staff_department', 'staff_designation', 'book_category', 'hostel', 'hostel_category', 'transport_route', 'transport_vehicle', 'transport_stoppage', 'leave_category', 'voucher_head');
+        if (!in_array($table, $allowedTables, true)) { access_denied(); }
+        $tablePermissions = array('accounts' => 'account', 'class' => 'classes', 'section' => 'classes', 'subject' => 'subject',
+            'staff_department' => 'department', 'staff_designation' => 'designation', 'book_category' => 'book',
+            'hostel' => 'hostel', 'hostel_category' => 'hostel', 'transport_route' => 'transport_route',
+            'transport_vehicle' => 'transport_vehicle', 'transport_stoppage' => 'transport_stoppage',
+            'leave_category' => 'leave_request', 'voucher_head' => 'voucher_head');
+        $allowed = get_permission($tablePermissions[$table], 'is_view');
+        if (in_array($table, array('accounts', 'voucher_head'), true)) {
+            $allowed = $allowed || get_permission('deposit', 'is_add') || get_permission('expense', 'is_add');
+        }
+        if (!$allowed) { access_denied(); }
         $branch_id = $this->application_model->get_branch_id();
         if (!empty($branch_id)) {
             $result = $this->db->select('id,name')->where('branch_id', $branch_id)->get($table)->result_array();

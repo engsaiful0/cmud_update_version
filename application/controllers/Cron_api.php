@@ -46,7 +46,7 @@ class Cron_api extends MY_Controller
 
     public function send_smsemail_command($api_key = '')
     {
-        if ($api_key != "" && $this->api_key != $api_key) {
+        if ($api_key === '' || empty($this->api_key) || !hash_equals((string) $this->api_key, (string) $api_key)) {
             echo "API Key is required or API Key does not match.";
             exit();
         }
@@ -75,7 +75,7 @@ class Cron_api extends MY_Controller
 
     public function homework_command($api_key = '')
     {
-        if ($api_key != "" && $this->api_key != $api_key) {
+        if ($api_key === '' || empty($this->api_key) || !hash_equals((string) $this->api_key, (string) $api_key)) {
             echo "API Key is required or API Key does not match.";
             exit();
         }
@@ -99,7 +99,7 @@ class Cron_api extends MY_Controller
 
     public function fees_reminder_command($api_key = '')
     {
-        if ($api_key != "" && $this->api_key != $api_key) {
+        if ($api_key === '' || empty($this->api_key) || !hash_equals((string) $this->api_key, (string) $api_key)) {
             echo "API Key is required or API Key does not match.";
             exit();
         }

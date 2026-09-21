@@ -24,7 +24,7 @@
 			if (is_student_loggedin() || is_parent_loggedin()) {
 				$this->load->view('userrole/sidebar'); 
 			} else {
-				$this->load->view('layout/sidebar'); 
+                echo $this->authorization->filterMenu($this->load->view('layout/sidebar', array(), true));
 			} 
 			?>
 			<!-- page main content -->

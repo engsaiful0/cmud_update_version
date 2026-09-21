@@ -24,10 +24,10 @@
 							<?php if(count($roles)){ $count = 1; foreach($roles as $row): ?>
 							<tr>
 								<td><?php echo $count++; ?></td>
-								<td><?php echo $row['name']; ?></td>
+								<td><?php echo html_escape($row['name']); ?></td>
 								<td><?php echo $row['is_system'] ? translate('yes') :  translate('no'); ?></td>
 								<td class="min-w-xs">
-									<a class="btn btn-default btn-circle icon" data-toggle="tooltip" data-original-title="<?php echo translate('edit'); ?>" href="<?php echo base_url('role/edit/' . $row['id']); ?>"><i class="fas fa-pen-nib"></i></a>
+									<?php if (!$row['is_system']): ?><a class="btn btn-default btn-circle icon" data-toggle="tooltip" data-original-title="<?php echo translate('edit'); ?>" href="<?php echo base_url('role/edit/' . $row['id']); ?>"><i class="fas fa-pen-nib"></i></a><?php endif; ?>
 									<a class="btn btn-default btn-circle" href="<?php echo base_url('role/permission/' . $row['id']); ?>"><i class="fab fa-buromobelexperte"></i> <?php echo translate('permission'); ?></a>
 									<?php if(!$row['is_system']){ ?>
 										<?php echo btn_delete('role/delete/' . $row['id']); ?>

@@ -22,6 +22,47 @@ class Role extends Admin_Controller
     }
 
     // new role add
+    public function users()
+    {
+        $this->load->model('user_management_model');
+        $this->data['users'] = $this->user_management_model->listing();
+        $this->data['title'] = 'User Management';
+        $this->data['sub_page'] = 'role/users';
+        $this->data['main_menu'] = 'settings';
+        $this->load->view('layout/index', $this->data);
+    }
+
+    public function user($id = null)
+    {
+        $this->load->model('user_management_model');
+        $account = $id === null ? null : $this->user_management_model->find($id);
+        if ($id !== null && (!$account || (int) $account['role'] === 1)) { access_denied(); }
+        $this->data['account'] = $account;
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('username', 'Username', 'trim|required|max_length[100]|regex_match[/^[a-zA-Z0-9_.@-]+$/]');
+            $this->form_validation->set_rules('name', 'Name', 'trim|required|max_length[255]');
+            $this->form_validation->set_rules('email', 'Email', 'trim|valid_email|max_length[100]');
+            $this->form_validation->set_rules('role', 'Role', 'required|integer');
+            $this->form_validation->set_rules('branch_id', 'Branch', 'required|integer');
+            $this->form_validation->set_rules('active', 'Status', 'required|in_list[0,1]');
+            $this->form_validation->set_rules('password', 'Password', ($id === null ? 'required|' : '') . 'min_length[8]|max_length[72]|matches[confirm_password]');
+            $this->form_validation->set_rules('confirm_password', 'Confirm Password', 'matches[password]');
+            if ($this->form_validation->run()) {
+                $data = array();
+                foreach (array('username', 'name', 'email', 'role', 'branch_id', 'active', 'password') as $field) { $data[$field] = $this->input->post($field); }
+                $error = $this->user_management_model->saveUser($data, $id);
+                if ($error === null) { set_alert('success', 'User saved.'); redirect('role/users'); }
+                $this->data['save_error'] = $error;
+            }
+        }
+        $this->data['roles'] = $this->role_model->getRoleList();
+        $this->data['branches'] = $this->db->select('id, name')->get('branch')->result_array();
+        $this->data['title'] = $id === null ? 'Create User' : 'Edit User';
+        $this->data['sub_page'] = 'role/user';
+        $this->data['main_menu'] = 'settings';
+        $this->load->view('layout/index', $this->data);
+    }
+
     public function index()
     {
         if (isset($_POST['save'])) {
@@ -29,7 +70,7 @@ class Role extends Admin_Controller
                 array(
                     'field' => 'role',
                     'label' => 'Role Name',
-                    'rules' => 'required|callback_unique_name',
+                    'rules' => 'trim|required|max_length[50]|callback_unique_name',
                 ),
             );
             $this->form_validation->set_rules($rules);
@@ -38,6 +79,7 @@ class Role extends Admin_Controller
             } else {
                 // update information in the database
                 $data = $this->input->post();
+                unset($data['id']);
                 $this->role_model->save_roles($data);
                 set_alert('success', translate('information_has_been_saved_successfully'));
                 redirect(base_url('role'));
@@ -53,12 +95,16 @@ class Role extends Admin_Controller
     // role edit
     public function edit($id)
     {
+        $role = $this->db->get_where('roles', array('id' => $id))->row_array();
+        if (!$role || !empty($role['is_system'])) {
+            access_denied();
+        }
         if (isset($_POST['save'])) {
             $rules = array(
                 array(
                     'field' => 'role',
                     'label' => 'Role Name',
-                    'rules' => 'required|callback_unique_name',
+                    'rules' => 'trim|required|max_length[50]|callback_unique_name',
                 ),
             );
             $this->form_validation->set_rules($rules);
@@ -67,6 +113,7 @@ class Role extends Admin_Controller
             } else {
                 // SAVE ROLE INFORMATION IN THE DATABASE
                 $data = $this->input->post();
+                $data['id'] = $id;
                 $this->role_model->save_roles($data);
                 set_alert('success', translate('information_has_been_updated_successfully'));
                 redirect(base_url('role'));
@@ -82,7 +129,7 @@ class Role extends Admin_Controller
     // check unique name
     public function unique_name($name)
     {
-        $id = $this->input->post('id');
+        $id = $this->router->fetch_method() === 'edit' ? $this->uri->segment(3) : null;
         if (isset($id)) {
             $where = array('name' => $name, 'id != ' => $id);
         } else {
@@ -100,10 +147,16 @@ class Role extends Admin_Controller
     // role delete in DB
     public function delete($role_id)
     {
-        $systemRole = array(1, 2, 3, 4, 5, 6, 7);
-        if (!in_array($role_id, $systemRole)) {
+        if ($this->input->method() !== 'post') { show_error('POST required.', 405); }
+        $role = $this->db->get_where('roles', array('id' => $role_id))->row_array();
+        if ($role && empty($role['is_system']) && !$this->db->where('role', $role_id)->count_all_results('login_credential')) {
+            $this->db->trans_start();
+            $this->db->delete('staff_privileges', array('role_id' => $role_id));
             $this->db->where('id', $role_id);
             $this->db->delete('roles');
+            $this->db->trans_complete();
+        } else {
+            show_error('System roles and roles assigned to users cannot be deleted.', 409);
         }
     }
 
@@ -115,27 +168,9 @@ class Role extends Admin_Controller
             access_denied();
         }
         if (isset($_POST['save'])) {
-            $role_id = $this->input->post('role_id');
             $privileges = $this->input->post('privileges');
-            foreach ($privileges as $key => $value) {
-                $is_add = (isset($value['add']) ? 1 : 0);
-                $is_edit = (isset($value['edit']) ? 1 : 0);
-                $is_view = (isset($value['view']) ? 1 : 0);
-                $is_delete = (isset($value['delete']) ? 1 : 0);
-                $arrayData = array(
-                    'role_id' => $role_id,
-                    'permission_id' => $key,
-                    'is_add' => $is_add,
-                    'is_edit' => $is_edit,
-                    'is_view' => $is_view,
-                    'is_delete' => $is_delete,
-                );
-                $exist_privileges = $this->db->select('id')->limit(1)->where(array('role_id' => $role_id, 'permission_id' => $key))->get('staff_privileges')->num_rows();
-                if ($exist_privileges > 0) {
-                    $this->db->update('staff_privileges', $arrayData, array('role_id' => $role_id, 'permission_id' => $key));
-                } else {
-                    $this->db->insert('staff_privileges', $arrayData);
-                }
+            if (!$this->role_model->savePermissions($role_id, is_array($privileges) ? $privileges : array())) {
+                show_error('Permissions could not be saved. Please retry.', 500);
             }
             set_alert('success', translate('information_has_been_updated_successfully'));
             redirect(base_url('role/permission/' . $role_id));

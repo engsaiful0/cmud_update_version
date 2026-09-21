@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Popupbox extends MY_Controller
+class Popupbox extends Admin_Controller
 {
 
     public function __construct()

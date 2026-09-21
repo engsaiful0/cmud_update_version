@@ -68,7 +68,9 @@ class Authentication extends Authentication_Controller
                             'set_lang' => $getConfig['translation'],
                             'set_session_id' => $getConfig['session_id'],
                             'loggedin' => true,
+                            'credential_fingerprint' => hash('sha256', $login_credential->password),
                         );
+                        $this->session->sess_regenerate(true);
                         $this->session->set_userdata($sessionData);
                         $this->db->update('login_credential', array('last_login' => date('Y-m-d H:i:s')), array('id' => $login_credential->id));
                         // is logged in

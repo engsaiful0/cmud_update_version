@@ -182,6 +182,7 @@ class Employee extends Admin_Controller
     // user interface and employees all information are prepared and stored in the database here
     public function delete($id = '')
     {
+        if ($this->db->where(array('user_id' => $id, 'role' => 1))->count_all_results('login_credential')) { access_denied(); }
         if (!get_permission('employee', 'is_delete')) {
             access_denied();
         }
@@ -240,7 +241,7 @@ class Employee extends Admin_Controller
     public function valid_role($id)
     {
         $restrictions = array(1, 6, 7);
-        if (in_array($id, $restrictions)) {
+        if (in_array($id, $restrictions) || !$this->db->where('id', $id)->count_all_results('roles')) {
             $this->form_validation->set_message("valid_role", translate('selected_role_restrictions'));
             return false;
         } else {

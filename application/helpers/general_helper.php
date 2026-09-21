@@ -36,17 +36,8 @@ function translate($word = '')
 function get_permission($permission, $can = '')
 {
     $ci = &get_instance();
-    $role_id = $ci->session->userdata('loggedin_role_id');
-    if ($role_id == 1) {
-        return true;
-    }
-    $permissions = get_staff_permissions($role_id);
-    foreach ($permissions as $permObject) {
-        if ($permObject->permission_prefix == $permission && $permObject->$can == '1') {
-            return true;
-        }
-    }
-    return false;
+    $ci->load->library('authorization');
+    return $ci->authorization->can($permission, $can);
 }
 
 function get_staff_permissions($id)
@@ -377,13 +368,15 @@ function array_to_object($array)
 
 function access_denied()
 {
-    set_alert('error', translate('access_denied'));
-    redirect(site_url('dashboard'));
+    $ci = &get_instance();
+    $ci->load->library('authorization');
+    $ci->authorization->deny();
 }
 
 function ajax_access_denied()
 {
-    set_alert('error', translate('access_denied'));
+    http_response_code(403);
+    header('Content-Type: application/json');
     $array = array('status' => 'access_denied');
     echo json_encode($array);
     exit();

@@ -1,10 +1,12 @@
 <section class="panel">
 	<div class="panel-heading">
-		<h4 class="panel-title"> <i class="fab fa-buromobelexperte"></i> <?php echo translate('role_permission_for') . " : " . get_type_name_by_id('roles', $role_id); ?></h4>
+		<h4 class="panel-title"> <i class="fab fa-buromobelexperte"></i> <?php echo translate('role_permission_for') . " : " . html_escape(get_type_name_by_id('roles', $role_id)); ?></h4>
 	</div>
     <?php echo form_open_multipart($this->uri->uri_string()); ?>
 		<input type="hidden" name="role_id" value="<?php echo $role_id; ?>">
 		<div class="panel-body">
+            <p><a href="<?= base_url('role') ?>">Select another role</a> &middot; <a href="<?= base_url('role/users') ?>">Assign roles to users</a></p>
+            <p class="text-muted">Permissions apply to every user assigned to this role on their next request. Unchecked permissions are revoked.</p>
 			<div class="table-responsive">
 				<table class="table table-bordered table-hover table-condensed mt-sm" cellspacing="0" width="100%">
 					<thead>
@@ -38,7 +40,7 @@
 							foreach($modules as $module):
 							?>
 						<tr>
-							<th colspan="5"><?php echo $module['name']; ?></th>
+							<th colspan="5"><?php echo html_escape($module['name']); ?></th>
 						</tr>
 						<?php
 						$permissions = $this->role_model->check_permissions($module['id'], $role_id);
@@ -46,7 +48,7 @@
 						?>
 						<input type="hidden" name="privileges[<?php echo $permission['id']; ?>][privileges_id]" value="<?php echo $permission['id']; ?>">
 						<tr>
-							<td class="pl-xl"><i class="far fa-arrow-alt-circle-right text-md"></i> <?php echo $permission['name']; ?></td>
+							<td class="pl-xl"><i class="far fa-arrow-alt-circle-right text-md"></i> <?php echo html_escape($permission['name']); ?></td>
 							<td>
 								<?php if($permission['show_view']){ ?>
 								<div class="checkbox-replace"> 

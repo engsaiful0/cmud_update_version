@@ -954,17 +954,36 @@ class Student extends Admin_Controller
             access_denied();
         }
 
-        // Get filter data
-        $roll = $this->input->post('roll');
-        $class_id = $this->input->post('class_id');
-        $subject_id = $this->input->post('subject_id');
-        $branchID = $this->application_model->get_branch_id();
+        // Keep filters in the URL so pagination retains the selected criteria.
+        if ($this->input->post('search')) {
+            $filters = array();
+            foreach (array('roll', 'class_id', 'subject_id', 'branch_id') as $field) {
+                $value = $this->input->post($field);
+                $filters[$field] = is_scalar($value) ? (string) $value : '';
+            }
+            redirect('student/all_students?' . http_build_query($filters));
+        }
+        foreach (array('roll', 'class_id', 'subject_id') as $field) {
+            $value = $this->input->get($field);
+            $this->data[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+        $roll = $this->data['roll'];
+        $class_id = $this->data['class_id'];
+        $subject_id = $this->data['subject_id'];
+        $branchID = is_superadmin_loggedin() ? $this->input->get('branch_id') : get_loggedin_branch_id();
+        $branchID = is_scalar($branchID) ? (string) $branchID : '';
 
-        // Pagination configuration
+        // Pagination URLs retain the existing row-offset format.
         $config['base_url'] = site_url('student/all_students');
         $config['total_rows'] = $this->student_model->countAllStudents($roll, $branchID, $class_id, $subject_id);
-        $config['per_page'] = 20; // Number of records per page
+        $config['per_page'] = 100;
         $config['uri_segment'] = 3; // Segment in the URL where page number is found
+        $config['reuse_query_string'] = true;
+        $config['use_page_numbers'] = false;
+        $offset = max(0, (int) $this->uri->segment(3, 0));
+        $lastOffset = max(0, (int) ceil($config['total_rows'] / $config['per_page']) - 1) * $config['per_page'];
+        $offset = min((int) floor($offset / $config['per_page']) * $config['per_page'], $lastOffset);
+        $config['cur_page'] = $offset;
         $config['num_links'] = 5; // Number of pagination links to show
 
         // Pagination styling
@@ -996,9 +1015,9 @@ class Student extends Admin_Controller
         $this->pagination->initialize($config);
 
         // Fetch students data with pagination
-        $page = $this->uri->segment(3);
-        $offset = $page ? $page : 0;
         $this->data['students'] = $this->student_model->getAllStudents($roll, $branchID, $class_id, $subject_id, $config['per_page'], $offset);
+        $this->data['student_offset'] = $offset;
+        $this->data['student_total'] = $config['total_rows'];
 
         // Pass pagination links to the view
         $this->data['pagination'] = $this->pagination->create_links();

@@ -1608,6 +1608,9 @@
                                             <span><i class="fas fa-caret-right" aria-hidden="true"></i><?= translate('role_permission') ?></span>
                                         </a>
                                     </li>
+                                    <li class="<?php if ($sub_page == 'role/users' || $sub_page == 'role/user') echo 'nav-active'; ?>">
+                                        <a href="<?= base_url('role/users') ?>"><span><i class="fas fa-caret-right" aria-hidden="true"></i>User Management</span></a>
+                                    </li>
                                 <?php }
                                 if (is_superadmin_loggedin()) { ?>
                                     <li class="<?php if ($sub_page == 'sessions/index') echo 'nav-active'; ?>">

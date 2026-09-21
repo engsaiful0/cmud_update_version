@@ -136,6 +136,8 @@ class Onlineexam extends Admin_Controller
     /* online exam save in DB controller */
     public function exam_save()
     {
+        $action = $this->input->post('id') ? 'is_edit' : 'is_add';
+        if (!get_permission('online_exam', $action)) { ajax_access_denied(); }
         if ($_POST) {
             $this->exam_validation();
             if ($this->form_validation->run() == true) {

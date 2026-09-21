@@ -535,18 +535,58 @@ class Fees extends Admin_Controller
     }
     public function payment_list()
     {
-        $branchID = $this->application_model->get_branch_id();
         if ($this->input->post('search')) {
-
-            $this->data['class_id'] = $this->input->post('class_id');
-            $this->data['section_id'] = $this->input->post('section_id');
-            $this->data['student_id'] = $this->input->post('student_id');
-            $this->data['roll'] = $this->input->post('roll');
-            $this->data['payments'] = $this->fees_model->getAllPayments($this->data['class_id'], $this->data['student_id'],$this->data['roll'], $branchID);
-        } else {
-
-            $this->data['payments'] = $this->fees_model->getAllPayments();
+            $filters = array();
+            foreach (array('branch_id', 'class_id', 'student_id', 'roll') as $field) {
+                $value = $this->input->post($field);
+                $filters[$field] = is_scalar($value) ? (string) $value : '';
+            }
+            redirect('fees/payment_list?' . http_build_query($filters));
         }
+        foreach (array('class_id', 'student_id', 'roll') as $field) {
+            $value = $this->input->get($field);
+            $this->data[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+        $branchID = is_superadmin_loggedin() ? $this->input->get('branch_id') : get_loggedin_branch_id();
+        $branchID = is_scalar($branchID) ? (string) $branchID : '';
+        $classID = $this->data['class_id'];
+        $studentID = $this->data['student_id'];
+        $roll = $this->data['roll'];
+        $limit = 100;
+        $total = $this->fees_model->countAllPayments($classID, $studentID, $roll, $branchID);
+        $page = max(1, (int) $this->uri->segment(3, 1));
+        $page = min($page, max(1, (int) ceil($total / $limit)));
+        $offset = ($page - 1) * $limit;
+
+        $this->load->library('pagination');
+        $config = array(
+            'base_url' => base_url('fees/payment_list'),
+            'total_rows' => $total,
+            'per_page' => $limit,
+            'uri_segment' => 3,
+            'use_page_numbers' => true,
+            'reuse_query_string' => true,
+            'cur_page' => $page,
+            'num_links' => 3,
+            'full_tag_open' => '<ul class="pagination">',
+            'full_tag_close' => '</ul>',
+            'cur_tag_open' => '<li class="active"><span>',
+            'cur_tag_close' => '</span></li>',
+        );
+        foreach (array('num', 'first', 'last', 'next', 'prev') as $tag) {
+            $config[$tag . '_tag_open'] = '<li>';
+            $config[$tag . '_tag_close'] = '</li>';
+        }
+        $this->pagination->initialize($config);
+        $this->data['payments'] = $this->fees_model->getAllPayments($classID, $studentID, $roll, $branchID, $limit, $offset);
+        $this->data['payment_offset'] = $offset;
+        $this->data['payment_total'] = $total;
+        $this->data['pagination_links'] = $this->pagination->create_links();
+        $this->data['filter_classes'] = empty($branchID) ? array() : $this->db
+            ->select('id, name')->where('branch_id', $branchID)->order_by('name', 'ASC')->get('class')->result_array();
+        $this->data['filter_students'] = empty($classID) ? array() : $this->db
+            ->select('id, first_name, last_name, roll')->where('class_id', $classID)
+            ->where('branch_id', $branchID)->get('student')->result_array();
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('payment_list');
         $this->data['sub_page'] = 'fees/payment_list';

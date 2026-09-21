@@ -148,28 +148,38 @@ class Fees_model extends MY_Model
         $this->db->order_by('h.id', 'asc');
         return $this->db->get()->result_array();
     }
-    public function getAllPayments($class_id = '', $student_id = '', $roll = '', $branch_id = '')
+    public function getAllPayments($class_id = '', $student_id = '', $roll = '', $branch_id = '', $limit = 100, $offset = 0)
     {
-        // print_r('class_id='.$class_id);
-        // print_r('student_id='.$student_id);
-        // print_r('roll='.$roll);
-        // print_r('branch_id='.$branch_id);
-        // die;
         $this->db->select('h.*,s.first_name as student_name,s.roll');
+        $this->paymentListQuery($class_id, $student_id, $roll, $branch_id);
+        $this->db->order_by('h.id', 'desc');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    public function countAllPayments($class_id = '', $student_id = '', $roll = '', $branch_id = '')
+    {
+        $this->paymentListQuery($class_id, $student_id, $roll, $branch_id);
+        return $this->db->count_all_results();
+    }
+
+    private function paymentListQuery($class_id, $student_id, $roll, $branch_id)
+    {
         $this->db->from('fee_payment_history as h');
         if ($class_id != '' && $student_id == '') {
             $this->db->where('s.class_id', $class_id);
         } else if ($student_id != '') {
             $this->db->where('h.student_id', $student_id);
-        } elseif ($branch_id != '' && $class_id == '' && $student_id == '') {
+        }
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('h.branch_id', get_loggedin_branch_id());
+        } elseif ($branch_id != '') {
             $this->db->where('h.branch_id', $branch_id);
         }
         if ($roll != '') {
             $this->db->where('s.roll', trim($roll));
         }
         $this->db->join('student as s', 's.id = h.student_id');
-        $this->db->order_by('h.id', 'desc');
-        return $this->db->get()->result_array();
     }
 
     public function typeSave($data = array())

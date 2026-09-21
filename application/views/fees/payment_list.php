@@ -77,7 +77,7 @@ $currency_symbol = $global_config['currency_symbol'];
             <header class="panel-heading">
                 <h4 class="panel-title"><?= translate('select_ground') ?></h4>
             </header>
-            <?php echo form_open($this->uri->uri_string(), array('class' => 'validate')); ?>
+            <?php echo form_open('fees/payment_list', array('class' => 'validate', 'method' => 'get')); ?>
             <div class="panel-body">
                 <div class="row mb-sm">
                     <?php if (is_superadmin_loggedin()): ?>
@@ -90,7 +90,7 @@ $currency_symbol = $global_config['currency_symbol'];
                                 <select onchange="getClassInfoByBranch(this.value)" class="form-control" id="branch_id" data-plugin-selecttwo name="branch_id">
 
                                     <?php foreach ($arrayBranch as $key => $value): ?>
-                                        <option value="<?= htmlspecialchars($key) ?>"><?= htmlspecialchars($value) ?></option>
+                                        <option value="<?= htmlspecialchars($key) ?>" <?= (string) $key === (string) $branch_id ? 'selected' : '' ?>><?= htmlspecialchars($value) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -102,7 +102,10 @@ $currency_symbol = $global_config['currency_symbol'];
 
                             <select onchange='getStudentInfoByBatch(this.value)' class="form-control" id="class_id" data-plugin-selecttwo name="class_id">
 
-                                <option value=""> First Select the Branch</option>
+                                <option value=""><?= translate('select') ?></option>
+                                <?php foreach ($filter_classes as $filter_class): ?>
+                                    <option value="<?= html_escape($filter_class['id']) ?>" <?= (string) $filter_class['id'] === (string) $class_id ? 'selected' : '' ?>><?= html_escape($filter_class['name']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -111,13 +114,16 @@ $currency_symbol = $global_config['currency_symbol'];
                             <label class="control-label">Student</label>
                             <select class="form-control" id="student_id_show" data-plugin-selecttwo name="student_id">
                                 <option value="">Select Student</option>
+                                <?php foreach ($filter_students as $filter_student): ?>
+                                    <option value="<?= html_escape($filter_student['id']) ?>" <?= (string) $filter_student['id'] === (string) $student_id ? 'selected' : '' ?>><?= html_escape($filter_student['first_name'] . ' ' . $filter_student['last_name'] . ' ( S.ID : ' . $filter_student['roll'] . ')') ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
                     <div class="col-md-3 mb-sm">
                         <div class="form-group">
                             <label class="control-label">Student ID</label>
-                            <input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control">
+                            <input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control" value="<?= html_escape($roll) ?>">
                         </div>
                     </div>
 
@@ -139,8 +145,8 @@ $currency_symbol = $global_config['currency_symbol'];
                 </header>
                 <div class="panel-body">
                     <div class="mb-md mt-md">
-                        <div class="export_title"><?= translate('fees_payment_history') ?></div>
-                        <table class="table invoice-items" id="paymentHistory">
+                        <div class="table-responsive">
+                        <table class="table invoice-items" id="payment-list">
                             <thead>
                                 <tr class="h5 text-dark">
                                     <th id="cell-count" class="text-weight-semibold">#</th>
@@ -163,7 +169,7 @@ $currency_symbol = $global_config['currency_symbol'];
                             <tbody>
                                 <?php
 
-                                $serial = 1;
+                                $serial = $payment_offset + 1;
                                 foreach ($payments as $row) {
                                     $deposit_through_office_accounting = $this->fees_model->getStudentFeeDepositThroughOfficeAccount($row['roll']);
                                     $deposit_through_office_accounting_value = $deposit_through_office_accounting['total_amount'];
@@ -206,8 +212,18 @@ $currency_symbol = $global_config['currency_symbol'];
                                     </tr>
                                 <?php
                                 } ?>
+                                <?php if (empty($payments)): ?>
+                                    <tr><td colspan="12" class="text-center">No payments found.</td></tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
+                        </div>
+                        <p class="text-muted">
+                            Showing <?= $payment_total > 0 ? $payment_offset + 1 : 0 ?>
+                            to <?= $payment_offset + count($payments) ?>
+                            of <?= $payment_total ?> payments
+                        </p>
+                        <?= $pagination_links ?>
                     </div>
                 </div>
             </section>

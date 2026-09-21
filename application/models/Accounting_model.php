@@ -149,7 +149,7 @@ class Accounting_model extends MY_Model
     }
 
     // get voucher list function
-    public function getVoucherList($type = '')
+    public function getVoucherList($type = '', $limit = 100, $offset = 0)
     {
 
         $this->db->select('transactions.*, accounts.name as ac_name, voucher_head.name as v_head, payment_types.name as via_name');
@@ -157,13 +157,27 @@ class Accounting_model extends MY_Model
         $this->db->join('accounts', 'accounts.id = transactions.account_id', 'left');
         $this->db->join('voucher_head', 'voucher_head.id = transactions.voucher_head_id', 'left');
         $this->db->join('payment_types', 'payment_types.id = transactions.pay_via', 'left');
+        $this->filterVouchers($type);
+        $this->db->order_by('transactions.id', 'ASC');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    public function countVouchers($type = '')
+    {
+        $this->db->from('transactions');
+        $this->filterVouchers($type);
+        return $this->db->count_all_results();
+    }
+
+    private function filterVouchers($type)
+    {
         if (!empty($type)) {
             $this->db->where('transactions.type', $type);
         }
         if (!is_superadmin_loggedin()) {
             $this->db->where('transactions.branch_id', get_loggedin_branch_id());
         }
-        return $this->db->get()->result_array();
     }
 
     // get statement report function

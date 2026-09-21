@@ -7,7 +7,8 @@
 			</header>
 			<div class="panel-body">
 				<div class="export_title">All Transactions</div>
-				<table class="table table-bordered table-hover table-condensed table-export" cellspacing="0" width="100%">
+				<div class="table-responsive">
+				<table class="table table-bordered table-hover table-condensed" cellspacing="0" width="100%">
 					<thead>
 						<tr>
 							<th width="50"><?php echo translate('sl'); ?></th>
@@ -29,7 +30,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						<?php $count = 1; foreach ($voucherlist as $row): ?>
+						<?php $count = $voucher_offset + 1; foreach ($voucherlist as $row): ?>
 						<tr>
 							<td><?php echo $count++; ?></td>
 						<?php if (is_superadmin_loggedin()): ?>
@@ -50,8 +51,13 @@
 							<td><?php echo _d($row['date']); ?></td>
 						</tr>
 						<?php endforeach; ?>
+					<?php if (empty($voucherlist)): ?>
+                        <tr><td colspan="<?php echo 14 + (is_superadmin_loggedin() ? 1 : 0); ?>" class="text-center">No transactions found.</td></tr>
+                        <?php endif; ?>
 					</tbody>
 				</table>
+                    </div>
+                    <?php $this->load->view('accounting/voucher_pagination'); ?>
 			</div>
 		</section>
 	</div>

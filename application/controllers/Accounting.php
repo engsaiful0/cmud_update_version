@@ -219,7 +219,7 @@ class Accounting extends Admin_Controller
         }
         $branchID = $this->application_model->get_branch_id();
         $this->data['branch_id'] = $branchID;
-        $this->data['voucherlist'] = $this->accounting_model->getVoucherList('deposit');
+        $this->paginateVouchers('voucher_deposit', 'deposit');
         $this->data['sub_page'] = 'accounting/voucher_deposit';
         $this->data['main_menu'] = 'accounting';
         $this->data['headerelements'] = array(
@@ -242,7 +242,7 @@ class Accounting extends Admin_Controller
         }
         $branchID = $this->application_model->get_branch_id();
         $this->data['branch_id'] = $branchID;
-        $this->data['voucherlist'] = $this->accounting_model->getVoucherList('expense');
+        $this->paginateVouchers('voucher_expense', 'expense');
         $this->data['sub_page'] = 'accounting/voucher_expense';
         $this->data['main_menu'] = 'accounting';
         $this->data['headerelements'] = array(
@@ -308,13 +308,46 @@ class Accounting extends Admin_Controller
             access_denied();
         }
 
-        $this->data['voucherlist'] = $this->accounting_model->getVoucherList();
+        $this->paginateVouchers('all_transactions');
         $this->data['sub_page'] = 'accounting/all_transactions';
         $this->data['main_menu'] = 'accounting';
         $this->data['title'] = translate('office_accounting');
         $this->load->view('layout/index', $this->data);
     }
 
+
+    private function paginateVouchers($route, $type = '')
+    {
+        $this->load->library('pagination');
+        $limit = 100;
+        $total = $this->accounting_model->countVouchers($type);
+        $page = max(1, (int) $this->uri->segment(3, 1));
+        $page = min($page, max(1, (int) ceil($total / $limit)));
+        $offset = ($page - 1) * $limit;
+
+        $config = array(
+            'base_url' => base_url('accounting/' . $route),
+            'total_rows' => $total,
+            'per_page' => $limit,
+            'uri_segment' => 3,
+            'use_page_numbers' => true,
+            'cur_page' => $page,
+            'num_links' => 3,
+            'full_tag_open' => '<ul class="pagination">',
+            'full_tag_close' => '</ul>',
+            'cur_tag_open' => '<li class="active"><span>',
+            'cur_tag_close' => '</span></li>',
+        );
+        foreach (array('num', 'first', 'last', 'next', 'prev') as $tag) {
+            $config[$tag . '_tag_open'] = '<li>';
+            $config[$tag . '_tag_close'] = '</li>';
+        }
+        $this->pagination->initialize($config);
+        $this->data['voucherlist'] = $this->accounting_model->getVoucherList($type, $limit, $offset);
+        $this->data['voucher_offset'] = $offset;
+        $this->data['voucher_total'] = $total;
+        $this->data['pagination_links'] = $this->pagination->create_links();
+    }
 
     // this function is used to voucher data update
     public function voucher_deposit_edit($id = '')

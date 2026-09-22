@@ -522,8 +522,11 @@ class CI_Pagination {
 			$this->cur_page = (string) $this->cur_page;
 		}
 
-		// If something isn't quite right, back to the default base page.
-		if ( ! ctype_digit((string) $this->cur_page) OR ($this->use_page_numbers && (int) $this->cur_page === 0))
+		// If something isn't quite right, back to the default base page. A
+		// missing URI/query-string page value is null on PHP 8.2+, so normalize
+		// it before calling ctype_digit().
+		$current_page = $this->cur_page === null ? '' : (string) $this->cur_page;
+		if ( ! ctype_digit($current_page) OR ($this->use_page_numbers && (int) $current_page === 0))
 		{
 			$this->cur_page = $base_page;
 		}

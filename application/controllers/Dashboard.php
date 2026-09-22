@@ -75,7 +75,6 @@ class Dashboard extends Admin_Controller
             $this->data['weekend_attendance'] = get_permission('weekend_attendance_inspection_chart', 'is_view') ? $this->dashboard_model->getWeekendAttendance($schoolID) : array('days' => array(), 'employee_att' => array(), 'student_att' => array());
             $this->data['get_monthly_admission'] = get_permission('admission_count_widget', 'is_view') ? $this->dashboard_model->getMonthlyAdmission($schoolID) : 0;
             $this->data['get_voucher'] = get_permission('voucher_count_widget', 'is_view') ? $this->dashboard_model->getVoucher($schoolID) : 0;
-            $this->data['get_transport_route'] = get_permission('transport_count_widget', 'is_view') ? $this->dashboard_model->get_transport_route($schoolID) : 0;
             $this->data['get_total_student'] = get_permission('student_count_widget', 'is_view') ? $this->dashboard_model->get_total_student($schoolID) : 0;
             $this->data['sub_page'] = 'dashboard/index';
         }

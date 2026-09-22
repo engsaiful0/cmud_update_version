@@ -18,25 +18,6 @@ if ($div == 0) {
 	$widget1 = 12 / $div;
 }
 
-$div2 = 0;
-if (get_permission('admission_count_widget', 'is_view')) {
-	$div2++;
-}
-if (get_permission('voucher_count_widget', 'is_view')) {
-	$div2++;
-}
-if (get_permission('transport_count_widget', 'is_view')) {
-	$div2++;
-}
-if (get_permission('hostel_count_widget', 'is_view')) {
-	$div2++;
-}
-if ($div2 == 0) {
-	$widget2 = 0;
-} else {
-	$widget2 = 12 / $div2;
-}
-
 $div3 = 12;
 if ((get_permission('student_birthday_widget', 'is_view') && get_permission('student_birthday_wishes', 'is_view')) || (get_permission('staff_birthday_widget', 'is_view') && get_permission('staff_birthday_wishes', 'is_view'))) {
 	$div3 = 9;
@@ -305,61 +286,6 @@ if ((get_permission('student_birthday_widget', 'is_view') && get_permission('stu
 			</div>
 		<?php } ?>
 	</div>
-	<?php if ($widget2 > 0) { ?>
-		<div class="row">
-			<div class="col-md-12 col-lg-12 col-sm-12">
-				<div class="panel">
-					<div class="row widget-row-in">
-
-						<?php if (get_permission('transport_count_widget', 'is_view')) { ?>
-							<div class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
-								<div class="panel-body">
-									<div class="widget-col-in row">
-										<div class="col-md-6 col-sm-6 col-xs-6"> <i class="fas fa-road"></i>
-											<h5 class="text-muted"><?php echo translate('transport'); ?></h5>
-										</div>
-										<div class="col-md-6 col-sm-6 col-xs-6">
-											<h3 class="counter text-right mt-md text-primary"><?= $get_transport_route ?></h3>
-										</div>
-										<div class="col-md-12 col-sm-12 col-xs-12">
-											<div class="box-top-line line-color-primary">
-												<span class="text-muted text-uppercase"><?php echo translate('total_route'); ?></span>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						<?php } ?>
-						<?php if (get_permission('hostel_count_widget', 'is_view')) { ?>
-							<div class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
-								<div class="panel-body">
-									<div class="widget-col-in row">
-										<div class="col-md-6 col-sm-6 col-xs-6"> <i class="fas fa-warehouse"></i>
-											<h5 class="text-muted"><?php echo translate('hostel'); ?></h5>
-										</div>
-										<div class="col-md-6 col-sm-6 col-xs-6">
-											<h3 class="counter text-right mt-md text-primary"><?php
-																								if (!empty($school_id))
-																									$this->db->where('branch_id', $school_id);
-																								$hostel_room = $this->db->select('id')->get('hostel_room')->num_rows();
-																								echo $hostel_room;
-																								?></h3>
-										</div>
-										<div class="col-md-12 col-sm-12 col-xs-12">
-											<div class="box-top-line line-color-primary">
-												<span class="text-muted text-uppercase"><?= translate('total_room') ?></span>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						<?php } ?>
-					</div>
-				</div>
-			</div>
-		</div>
-	<?php } ?>
-	
 </div>
 
 <div class="zoom-anim-dialog modal-block modal-block-primary mfp-hide" id="modal">

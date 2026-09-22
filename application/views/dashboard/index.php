@@ -38,7 +38,7 @@ if ($div2 == 0) {
 }
 
 $div3 = 12;
-if (get_permission('student_birthday_widget', 'is_view') || get_permission('staff_birthday_widget', 'is_view')) {
+if ((get_permission('student_birthday_widget', 'is_view') && get_permission('student_birthday_wishes', 'is_view')) || (get_permission('staff_birthday_widget', 'is_view') && get_permission('staff_birthday_wishes', 'is_view'))) {
 	$div3 = 9;
 }
 ?>
@@ -132,7 +132,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 							</div>
 						<?php } ?>
 						<?php if (get_permission('parent_count_widget', 'is_view')) { ?>
-							<div style="display: none;" class="col-lg-<?php echo $widget1; ?> col-sm-6 ">
+							<div class="col-lg-<?php echo $widget1; ?> col-sm-6 ">
 								<div class="panel-body">
 									<div class="widget-col-in row">
 										<div class="col-md-6 col-sm-6 col-xs-6"> <i class="fas fa-user-tie"></i>
@@ -236,7 +236,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 				</div>
 			<?php } ?>
 		
-			<?php if (get_permission('student_birthday_widget', 'is_view')) { ?>
+			<?php if (get_permission('student_birthday_widget', 'is_view') && get_permission('student_birthday_wishes', 'is_view')) { ?>
 					<div style="margin-top: 20px;" class="col-xs-6">
 						<div class="panel-body">
 							<div class="widget-col-in row">
@@ -264,7 +264,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 							</div>
 						</div>
 					</div>
-				<?php } if (get_permission('staff_birthday_widget', 'is_view')) { ?>
+				<?php } if (get_permission('staff_birthday_widget', 'is_view') && get_permission('staff_birthday_wishes', 'is_view')) { ?>
 					<div style="margin-top: 20px;" class="col-xs-6">
 						<div class="panel-body">
 							<div class="widget-col-in row">
@@ -293,7 +293,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 		</div>
 
 		<?php if (get_permission('weekend_attendance_inspection_chart', 'is_view')) { ?>
-			<div style="display: none;" class="<?php echo get_permission('student_quantity_pie_chart', 'is_view') ? 'col-md-12 col-lg-8 col-xl-9' : 'col-md-12'; ?>">
+			<div class="<?php echo get_permission('student_quantity_pie_chart', 'is_view') ? 'col-md-12 col-lg-8 col-xl-9' : 'col-md-12'; ?>">
 				<section class="panel">
 					<div class="panel-body">
 						<h4 class="chart-title mb-md"><?= translate('weekend_attendance_inspection') ?></h4>
@@ -312,7 +312,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 					<div class="row widget-row-in">
 
 						<?php if (get_permission('transport_count_widget', 'is_view')) { ?>
-							<div style="display: none;" class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
+							<div class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
 								<div class="panel-body">
 									<div class="widget-col-in row">
 										<div class="col-md-6 col-sm-6 col-xs-6"> <i class="fas fa-road"></i>
@@ -331,7 +331,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 							</div>
 						<?php } ?>
 						<?php if (get_permission('hostel_count_widget', 'is_view')) { ?>
-							<div style="display: none;" class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
+							<div class="col-lg-<?php echo $widget2; ?> col-sm-6 ">
 								<div class="panel-body">
 									<div class="widget-col-in row">
 										<div class="col-md-6 col-sm-6 col-xs-6"> <i class="fas fa-warehouse"></i>
@@ -393,6 +393,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 
 <script type="application/javascript">
 	(function($) {
+		<?php if (get_permission('event', 'is_view')) { ?>
 		$('#event_calendar').fullCalendar({
 			header: {
 				left: 'prev,next,today',
@@ -418,6 +419,7 @@ if (get_permission('student_birthday_widget', 'is_view') || get_permission('staf
 				}
 			}
 		});
+		<?php } ?>
 
 		// Annual Fee Summary JS
 		var total_fees = <?php echo json_encode($fees_summary["total_fee"]); ?>;

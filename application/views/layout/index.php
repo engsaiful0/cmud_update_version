@@ -24,7 +24,10 @@
 			if (is_student_loggedin() || is_parent_loggedin()) {
 				$this->load->view('userrole/sidebar'); 
 			} else {
-                echo $this->authorization->filterMenu($this->load->view('layout/sidebar', array(), true));
+				// layout/sidebar is the single staff navigation definition. Each
+				// parent and child is guarded by the same Role Permission grants
+				// that protect its destination route.
+				$this->load->view('layout/sidebar');
 			} 
 			?>
 			<!-- page main content -->

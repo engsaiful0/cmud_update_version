@@ -90,6 +90,9 @@ class Authorization
         if (!$this->allowsRoute($route, $this->CI->input->method() === 'post')) { $this->deny(); }
     }
 
+    // Kept for explicit callers which need to filter arbitrary HTML. The staff
+    // layout does not use this post-processing step; its sidebar is rendered
+    // from one permission-aware menu definition.
     public function filterMenu($html)
     {
         if (is_superadmin_loggedin()) { return $html; }

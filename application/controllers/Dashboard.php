@@ -57,22 +57,26 @@ class Dashboard extends Admin_Controller
             $getSQLMode = $this->application_model->getSQLMode();
             $this->data['school_id'] = $schoolID;
             $this->data['sqlMode'] = $getSQLMode;
-            if ($getSQLMode == false) {
+            // Only prepare statistics that the current role is allowed to see.  The
+            // view has the same guards, but this also keeps protected totals out of
+            // the rendered page source and avoids unnecessary dashboard queries.
+            $emptyFeesSummary = array(
+                'total_fee' => array_fill(0, 12, 0),
+                'total_paid' => array_fill(0, 12, 0),
+                'total_due' => array_fill(0, 12, 0),
+            );
+            if ($getSQLMode == false && get_permission('annual_student_fees_summary_chart', 'is_view')) {
                 $this->data['fees_summary'] = $this->dashboard_model->annualFeessummaryCharts($schoolID);
             } else {
-                $this->data['fees_summary'] = array(
-                    'total_fee' => 0,
-                    'total_paid' => 0,
-                    'total_due' => 0,
-                );
+                $this->data['fees_summary'] = $emptyFeesSummary;
             }
-            $this->data['student_by_class'] = $this->dashboard_model->getStudentByClass($schoolID);
-            $this->data['income_vs_expense'] = $this->dashboard_model->getIncomeVsExpense($schoolID);
-            $this->data['weekend_attendance'] = $this->dashboard_model->getWeekendAttendance($schoolID);
-            $this->data['get_monthly_admission'] = $this->dashboard_model->getMonthlyAdmission($schoolID);
-            $this->data['get_voucher'] = $this->dashboard_model->getVoucher($schoolID);
-            $this->data['get_transport_route'] = $this->dashboard_model->get_transport_route($schoolID);
-            $this->data['get_total_student'] = $this->dashboard_model->get_total_student($schoolID);
+            $this->data['student_by_class'] = get_permission('student_quantity_pie_chart', 'is_view') ? $this->dashboard_model->getStudentByClass($schoolID) : array();
+            $this->data['income_vs_expense'] = get_permission('monthly_income_vs_expense_chart', 'is_view') ? $this->dashboard_model->getIncomeVsExpense($schoolID) : array();
+            $this->data['weekend_attendance'] = get_permission('weekend_attendance_inspection_chart', 'is_view') ? $this->dashboard_model->getWeekendAttendance($schoolID) : array('days' => array(), 'employee_att' => array(), 'student_att' => array());
+            $this->data['get_monthly_admission'] = get_permission('admission_count_widget', 'is_view') ? $this->dashboard_model->getMonthlyAdmission($schoolID) : 0;
+            $this->data['get_voucher'] = get_permission('voucher_count_widget', 'is_view') ? $this->dashboard_model->getVoucher($schoolID) : 0;
+            $this->data['get_transport_route'] = get_permission('transport_count_widget', 'is_view') ? $this->dashboard_model->get_transport_route($schoolID) : 0;
+            $this->data['get_total_student'] = get_permission('student_count_widget', 'is_view') ? $this->dashboard_model->get_total_student($schoolID) : 0;
             $this->data['sub_page'] = 'dashboard/index';
         }
         $language = 'en';

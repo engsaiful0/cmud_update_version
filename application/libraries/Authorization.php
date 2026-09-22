@@ -86,7 +86,12 @@ class Authorization
 
     public function enforce()
     {
-        $route = trim($this->CI->router->fetch_directory(), '/') . '/' . $this->CI->router->fetch_class() . '/' . $this->CI->router->fetch_method();
+        // CI may return null for the root controller directory. Cast every
+        // router component before trimming so PHP 8 does not throw a TypeError.
+        $directory = trim((string) $this->CI->router->fetch_directory(), '/');
+        $class = (string) $this->CI->router->fetch_class();
+        $method = (string) $this->CI->router->fetch_method();
+        $route = ($directory === '' ? '' : $directory . '/') . $class . '/' . $method;
         if (!$this->allowsRoute($route, $this->CI->input->method() === 'post')) { $this->deny(); }
     }
 

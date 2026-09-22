@@ -1,10 +1,10 @@
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^authentication/forgot$ .index.php [L,NC]
-RewriteRule ^authentication/forgot/$ .index.php [L,NC]
+# Route authentication through CodeIgniter even if a same-named directory exists.
+RewriteRule ^(authentication(?:/.*)?)$ index.php?/$1 [L,QSA,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?/$1 [L]
+RewriteRule ^(.*)$ index.php?/$1 [L,QSA]
 </IfModule>
 
 # php -- BEGIN cPanel-generated handler, do not edit

@@ -28,7 +28,17 @@
 				type: 'POST',
 				data: { branch_id: branchID },
 				success: function (data) {
-					$('#class_id').html(data);
+					var $classSelect = $('#class_id');
+					if ($classSelect.data('select2')) {
+						$classSelect.select2('destroy');
+					}
+					$classSelect.html(data);
+					if (typeof $.fn.select2 === 'function' && $classSelect.length) {
+						$classSelect.select2({
+							theme: 'bootstrap',
+							width: '100%'
+						});
+					}
 				}
 			});
 

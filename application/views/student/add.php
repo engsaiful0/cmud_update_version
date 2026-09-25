@@ -50,6 +50,22 @@ error_reporting(0);
 		});
 	}
 
+	$(document).ready(function() {
+		setTimeout(function() {
+			var $classSelect = $('#class_id');
+			if (!$classSelect.length || typeof $.fn.select2 !== 'function') {
+				return;
+			}
+			if ($classSelect.data('select2')) {
+				$classSelect.select2('destroy');
+			}
+			$classSelect.select2({
+				theme: 'bootstrap',
+				width: '100%'
+			});
+		}, 0);
+	});
+
 	$(document).on('input', '#course_price, #course_price_discount', function() {
 		var course_price = parseFloat($('#course_price').val()) || 0; // Ensure numeric value
 		var course_price_discount = $('#course_price_discount').val().trim(); // Get discount value as string
@@ -193,11 +209,12 @@ if (!empty($branch_id)) :
 							<div class="col-md-4 mb-sm">
 								<div class="form-group">
 									<label class="control-label"><?= translate('batch') ?> <span class="required">*</span></label>
-									<?php
-									$arrayClass = $this->app_lib->getClass($branch_id);
-									echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' onchange='getSectionByClass(this.value,0)'
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-									?>
+									<?php $arrayClass = $this->app_lib->getClass($branch_id); ?>
+									<select name="class_id" class="form-control" id="class_id" onchange="getSectionByClass(this.value,0)" data-plugin-selectTwo data-width="100%">
+										<?php foreach ($arrayClass as $classId => $className) : ?>
+											<option value="<?= html_escape($classId) ?>" <?= set_select('class_id', (string) $classId) ?>><?= html_escape($className) ?></option>
+										<?php endforeach; ?>
+									</select>
 									<span class="error"></span>
 								</div>
 							</div>

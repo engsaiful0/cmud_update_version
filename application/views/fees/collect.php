@@ -1,5 +1,14 @@
 <?php
 $currency_symbol = $global_config['currency_symbol'];
+$allocations = $this->fees_model->getInvoiceDetails($basic['id']);
+$invoice_balance = 0;
+foreach ($allocations as &$allocation) {
+    $allocation['deposit'] = $this->fees_model->getStudentFeeDeposit($allocation['student_id'], $allocation['financial_year_id']);
+    $allocation['office_deposit'] = $this->fees_model->getStudentFeeDepositThroughOfficeAccount($allocation['roll']);
+    $invoice_balance += $allocation['amount'] - ($allocation['deposit']['total_amount'] + $allocation['deposit']['total_discount'] + $allocation['office_deposit']['total_amount']);
+}
+unset($allocation);
+$invoice_is_paid = round($invoice_balance, 2) == 0;
 $extINTL = extension_loaded('intl');
 if ($extINTL == true) {
 	$spellout = new NumberFormatter("en", NumberFormatter::SPELLOUT);
@@ -47,18 +56,9 @@ if ($extINTL == true) {
 									</p>
 									<p class="mb-none">
 										<span class="text-dark"><?= translate('status') ?> : </span><?php
-																									$labelmode = '';
-																									if ($invoice['status'] == 'unpaid') {
-																										$status = translate('unpaid');
-																										$labelmode = 'label-danger-custom';
-																									} elseif ($invoice['status'] == 'partly') {
-																										$status = translate('partly_paid');
-																										$labelmode = 'label-info-custom';
-																									} elseif ($invoice['status'] == 'total') {
-																										$status = translate('total_paid');
-																										$labelmode = 'label-success-custom';
-																									}
-																									echo "<span class='value label " . $labelmode . " '>" . $status . "</span>";
+																									$status = translate($invoice_is_paid ? 'paid' : 'unpaid');
+                                            $labelmode = $invoice_is_paid ? 'label-success-custom' : 'label-danger-custom';
+                                            echo "<span class='value label " . $labelmode . " '>" . $status . "</span>";
 																									?>
 									</p>
 								</div>
@@ -123,13 +123,12 @@ if ($extINTL == true) {
 									$total_balance = 0;
 									$total_amount = 0;
 									$typeData = array('' => translate('select'));
-									$allocations = $this->fees_model->getInvoiceDetails($basic['id']);
 									foreach ($allocations as $row) {
 										// print_r($row);
 										// die;
 
-										$deposit = $this->fees_model->getStudentFeeDeposit($row['student_id'], $row['financial_year_id']);
-										$deposit_through_office_accounting = $this->fees_model->getStudentFeeDepositThroughOfficeAccount($row['roll']);
+										$deposit = $row['deposit'];
+										$deposit_through_office_accounting = $row['office_deposit'];
 										$type_discount = $deposit['total_discount'];
 										$type_fine = $deposit['total_fine'];
 										$type_amount = $deposit['total_amount'];
@@ -149,19 +148,10 @@ if ($extINTL == true) {
 
 
 											<td><?php
-												$status = 0;
-												$labelmode = '';
-												if ($type_amount == 0) {
-													$status = translate('unpaid');
-													$labelmode = 'label-danger-custom';
-												} elseif ($balance == 0) {
-													$status = translate('total_paid');
-													$labelmode = 'label-success-custom';
-												} else {
-													$status = translate('partly_paid');
-													$labelmode = 'label-info-custom';
-												}
-												echo "<span class='label " . $labelmode . " '>" . $status . "</span>";
+												$is_paid = round($balance, 2) == 0;
+                                                $status = translate($is_paid ? 'paid' : 'unpaid');
+                                                $labelmode = $is_paid ? 'label-success-custom' : 'label-danger-custom';
+                                                echo "<span class='label " . $labelmode . " '>" . $status . "</span>";
 												?></td>
 											<td><?php echo $currency_symbol . $row['course_price']; ?></td>
 											<td><?php echo $currency_symbol . $row['course_price_discount']; ?></td>
@@ -241,18 +231,9 @@ if ($extINTL == true) {
 										<p class="mb-none">
 											<span class="text-dark"><?= translate('status') ?> : </span>
 											<?php
-											$labelmode = '';
-											if ($invoice['status'] == 'unpaid') {
-												$status = translate('unpaid');
-												$labelmode = 'label-danger-custom';
-											} elseif ($invoice['status'] == 'partly') {
-												$status = translate('partly_paid');
-												$labelmode = 'label-info-custom';
-											} elseif ($invoice['status'] == 'total') {
-												$status = translate('total_paid');
-												$labelmode = 'label-success-custom';
-											}
-											echo "<span class='value label " . $labelmode . " '>" . $status . "</span>";
+											$status = translate($invoice_is_paid ? 'paid' : 'unpaid');
+                                            $labelmode = $invoice_is_paid ? 'label-success-custom' : 'label-danger-custom';
+                                            echo "<span class='value label " . $labelmode . " '>" . $status . "</span>";
 											?>
 										</p>
 									</div>

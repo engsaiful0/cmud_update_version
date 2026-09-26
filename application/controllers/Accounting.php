@@ -281,15 +281,54 @@ class Accounting extends Admin_Controller
         }
         $branchID = $this->application_model->get_branch_id();
         $this->data['branch_id'] = $branchID;
-        $this->paginateVouchers('voucher_expense', 'expense');
+        $filters = array();
+        foreach (array('branch_id', 'voucher_head_id', 'ref_no', 'pay_via', 'daterange') as $field) {
+            $value = $this->input->get($field);
+            $filters[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+        if (!is_superadmin_loggedin()) {
+            $filters['branch_id'] = get_loggedin_branch_id();
+        }
+        if ($filters['daterange'] !== '') {
+            $dates = explode(' - ', $filters['daterange']);
+            $valid = count($dates) === 2;
+            foreach ($dates as $date) {
+                $parsed = DateTime::createFromFormat('!Y/m/d', $date);
+                $valid = $valid && $parsed && $parsed->format('Y/m/d') === $date;
+            }
+            if (!$valid || $dates[0] > $dates[1]) {
+                return $this->output->set_status_header(400)->set_content_type('application/json')
+                    ->set_output(json_encode(array('error' => 'Select a valid date range (YYYY/MM/DD - YYYY/MM/DD).')));
+            }
+            $filters['date_from'] = str_replace('/', '-', $dates[0]);
+            $filters['date_to'] = str_replace('/', '-', $dates[1]);
+        }
+        $this->data['voucher_filters'] = $filters;
+        $this->paginateVouchers('voucher_expense', 'expense', $filters);
+        $this->db->select('id, name, branch_id')->where('type', 'expense');
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('branch_id', get_loggedin_branch_id());
+        } elseif ($filters['branch_id'] !== '') {
+            $this->db->where('branch_id', $filters['branch_id']);
+        }
+        $this->data['filter_voucher_heads'] = $this->db->order_by('name', 'ASC')->get('voucher_head')->result_array();
+        if ($this->input->is_ajax_request()) {
+            return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+                'html' => $this->load->view('accounting/voucher_expense_list', $this->data, true),
+                'heads' => $this->data['filter_voucher_heads'],
+            )));
+        }
         $this->data['sub_page'] = 'accounting/voucher_expense';
         $this->data['main_menu'] = 'accounting';
         $this->data['headerelements'] = array(
             'css' => array(
                 'vendor/dropify/css/dropify.min.css',
+                'vendor/daterangepicker/daterangepicker.css',
             ),
             'js' => array(
                 'vendor/dropify/js/dropify.min.js',
+                'vendor/moment/moment.js',
+                'vendor/daterangepicker/daterangepicker.js',
             ),
         );
         $this->data['title'] = translate('office_accounting');
@@ -347,7 +386,50 @@ class Accounting extends Admin_Controller
             access_denied();
         }
 
-        $this->paginateVouchers('all_transactions');
+        $filters = array();
+        foreach (array('branch_id', 'type', 'voucher_head_id', 'ref_no', 'roll', 'pay_via', 'daterange') as $field) {
+            $value = $this->input->get($field);
+            $filters[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+        if (!is_superadmin_loggedin()) {
+            $filters['branch_id'] = get_loggedin_branch_id();
+        }
+        if ($filters['daterange'] !== '') {
+            $dates = explode(' - ', $filters['daterange']);
+            $valid = count($dates) === 2;
+            foreach ($dates as $date) {
+                $parsed = DateTime::createFromFormat('!Y/m/d', $date);
+                $valid = $valid && $parsed && $parsed->format('Y/m/d') === $date;
+            }
+            if (!$valid || $dates[0] > $dates[1]) {
+                return $this->output->set_status_header(400)->set_content_type('application/json')
+                    ->set_output(json_encode(array('error' => 'Select a valid date range (YYYY/MM/DD - YYYY/MM/DD).')));
+            }
+            $filters['date_from'] = str_replace('/', '-', $dates[0]);
+            $filters['date_to'] = str_replace('/', '-', $dates[1]);
+        }
+        if (!in_array($filters['type'], array('', 'deposit', 'expense'), true)) {
+            return $this->output->set_status_header(400)->set_content_type('application/json')
+                ->set_output(json_encode(array('error' => 'Select a valid transaction type.')));
+        }
+        $this->data['voucher_filters'] = $filters;
+        $this->paginateVouchers('all_transactions', $filters['type'], $filters);
+        $this->db->select('id, name, branch_id');
+        if ($filters['type'] !== '') {
+            $this->db->where('type', $filters['type'] === 'deposit' ? 'income' : 'expense');
+        }
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('branch_id', get_loggedin_branch_id());
+        } elseif ($filters['branch_id'] !== '') {
+            $this->db->where('branch_id', $filters['branch_id']);
+        }
+        $this->data['filter_voucher_heads'] = $this->db->order_by('name', 'ASC')->get('voucher_head')->result_array();
+        if ($this->input->is_ajax_request()) {
+            return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+                'html' => $this->load->view('accounting/all_transactions_list', $this->data, true),
+                'heads' => $this->data['filter_voucher_heads'],
+            )));
+        }
         $this->data['sub_page'] = 'accounting/all_transactions';
         $this->data['main_menu'] = 'accounting';
         $this->data['title'] = translate('office_accounting');

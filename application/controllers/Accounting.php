@@ -219,15 +219,54 @@ class Accounting extends Admin_Controller
         }
         $branchID = $this->application_model->get_branch_id();
         $this->data['branch_id'] = $branchID;
-        $this->paginateVouchers('voucher_deposit', 'deposit');
+        $filters = array();
+        foreach (array('branch_id', 'voucher_head_id', 'ref_no', 'roll', 'pay_via', 'daterange') as $field) {
+            $value = $this->input->get($field);
+            $filters[$field] = is_scalar($value) ? trim((string) $value) : '';
+        }
+        if (!is_superadmin_loggedin()) {
+            $filters['branch_id'] = get_loggedin_branch_id();
+        }
+        if ($filters['daterange'] !== '') {
+            $dates = explode(' - ', $filters['daterange']);
+            $valid = count($dates) === 2;
+            foreach ($dates as $date) {
+                $parsed = DateTime::createFromFormat('!Y/m/d', $date);
+                $valid = $valid && $parsed && $parsed->format('Y/m/d') === $date;
+            }
+            if (!$valid || $dates[0] > $dates[1]) {
+                return $this->output->set_status_header(400)->set_content_type('application/json')
+                    ->set_output(json_encode(array('error' => 'Select a valid date range (YYYY/MM/DD - YYYY/MM/DD).')));
+            }
+            $filters['date_from'] = str_replace('/', '-', $dates[0]);
+            $filters['date_to'] = str_replace('/', '-', $dates[1]);
+        }
+        $this->data['voucher_filters'] = $filters;
+        $this->paginateVouchers('voucher_deposit', 'deposit', $filters);
+        $this->db->select('id, name, branch_id')->where('type', 'income');
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('branch_id', get_loggedin_branch_id());
+        } elseif ($filters['branch_id'] !== '') {
+            $this->db->where('branch_id', $filters['branch_id']);
+        }
+        $this->data['filter_voucher_heads'] = $this->db->order_by('name', 'ASC')->get('voucher_head')->result_array();
+        if ($this->input->is_ajax_request()) {
+            return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+                'html' => $this->load->view('accounting/voucher_deposit_list', $this->data, true),
+                'heads' => $this->data['filter_voucher_heads'],
+            )));
+        }
         $this->data['sub_page'] = 'accounting/voucher_deposit';
         $this->data['main_menu'] = 'accounting';
         $this->data['headerelements'] = array(
             'css' => array(
                 'vendor/dropify/css/dropify.min.css',
+                'vendor/daterangepicker/daterangepicker.css',
             ),
             'js' => array(
                 'vendor/dropify/js/dropify.min.js',
+                'vendor/moment/moment.js',
+                'vendor/daterangepicker/daterangepicker.js',
             ),
         );
         $this->data['title'] = translate('office_accounting');
@@ -316,11 +355,11 @@ class Accounting extends Admin_Controller
     }
 
 
-    private function paginateVouchers($route, $type = '')
+    private function paginateVouchers($route, $type = '', $filters = array())
     {
         $this->load->library('pagination');
         $limit = 100;
-        $total = $this->accounting_model->countVouchers($type);
+        $total = $this->accounting_model->countVouchers($type, $filters);
         $page = max(1, (int) $this->uri->segment(3, 1));
         $page = min($page, max(1, (int) ceil($total / $limit)));
         $offset = ($page - 1) * $limit;
@@ -331,6 +370,7 @@ class Accounting extends Admin_Controller
             'per_page' => $limit,
             'uri_segment' => 3,
             'use_page_numbers' => true,
+            'reuse_query_string' => true,
             'cur_page' => $page,
             'num_links' => 3,
             'full_tag_open' => '<ul class="pagination">',
@@ -343,7 +383,7 @@ class Accounting extends Admin_Controller
             $config[$tag . '_tag_close'] = '</li>';
         }
         $this->pagination->initialize($config);
-        $this->data['voucherlist'] = $this->accounting_model->getVoucherList($type, $limit, $offset);
+        $this->data['voucherlist'] = $this->accounting_model->getVoucherList($type, $limit, $offset, $filters);
         $this->data['voucher_offset'] = $offset;
         $this->data['voucher_total'] = $total;
         $this->data['pagination_links'] = $this->pagination->create_links();

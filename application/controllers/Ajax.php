@@ -181,27 +181,29 @@ class Ajax extends Admin_Controller
     }
     public function getStudentByBatch()
     {
-      
         $html = "";
         $class_id = $this->input->post('class_id');
-        $branch_id = $this->input->post('branch_id');
-
+        $student_id = $this->input->post('student_id');
         $branch_id = $this->application_model->get_branch_id();
+        if (empty($branch_id)) {
+            $branch_id = $this->input->post('branch_id');
+        }
 
         if (!empty($class_id)) {
             $this->db->select('st.register_no,st.roll,st.id as student_id,sub.name as subject_name, CONCAT(st.first_name, " ", st.last_name) as fullname');
             $this->db->from('student as st');
-            $this->db->join('subject as sub', 'sub.id = st.subject_id', 'inner');
+            $this->db->join('subject as sub', 'sub.id = st.subject_id', 'left');
             $this->db->where('st.class_id', $class_id);
-            $this->db->where('st.branch_id', $branch_id);
-            // $this->db->where('st.session_id', get_session_id());
-
+            if (!empty($branch_id)) {
+                $this->db->where('st.branch_id', $branch_id);
+            }
+            $this->db->order_by('st.first_name', 'ASC');
             $result = $this->db->get()->result_array();
             if (count($result)) {
                 $html .= "<option value=''>" . translate('select') . "</option>";
                 foreach ($result as $row) {
-                    
-                    $html .= '<option value="' . $row['student_id'] . '">' . $row['fullname'] . ' ( S.ID : ' . $row['roll'] . ')</option>';
+                    $sel = ((string) $row['student_id'] === (string) $student_id) ? ' selected' : '';
+                    $html .= '<option value="' . html_escape($row['student_id']) . '"' . $sel . '>' . html_escape($row['fullname']) . ' ( S.ID : ' . html_escape($row['roll']) . ')</option>';
                 }
             } else {
                 $html .= '<option value="">' . translate('no_information_available') . '</option>';

@@ -1,26 +1,83 @@
-<?php $widget = (is_superadmin_loggedin() ? 4 : 6); ?>
-<script>
-	function getStudentByBatch(class_id) {
+<?php $widget = (is_superadmin_loggedin() ? 4 : 6);
+$selectedClassId = set_value('class_id', isset($class_id) ? $class_id : '');
+$selectedStudentId = set_value('student_id', isset($student_id) ? $student_id : '');
+$csrfName = $this->security->get_csrf_token_name();
+$csrfHash = $this->security->get_csrf_hash();
+?>
+<script type="text/javascript">
+	function refreshSelect2($el, html, selectedValue) {
+		if (!$el.length) {
+			return;
+		}
+		if ($el.data('select2')) {
+			$el.select2('destroy');
+		}
+		if (typeof html !== 'undefined') {
+			$el.html(html);
+		}
+		if (typeof selectedValue !== 'undefined' && selectedValue !== null && selectedValue !== '') {
+			$el.val(String(selectedValue));
+		}
+		if (typeof $.fn.select2 === 'function') {
+			$el.select2({
+				theme: 'bootstrap',
+				width: '100%'
+			});
+		}
+	}
+
+	function getStudentInfoByBatch(class_id, student_id) {
 		var branch_id = $('#branch_id').val();
-		var student_id = $('#student_id').val();
-		alert("Invoice List Js");
+		if (!class_id) {
+			refreshSelect2($('#student_id_show'), '<option value="">Select Student</option>');
+			return;
+		}
 		$.ajax({
-			url: base_url + 'ajax/getStudentByBatch',
+			url: base_url + "ajax/getStudentByBatch",
 			type: 'POST',
 			data: {
 				class_id: class_id,
 				branch_id: branch_id,
-				student_id: student_id,
+				student_id: student_id || '',
+				'<?= $csrfName ?>': '<?= $csrfHash ?>'
 			},
 			success: function(response) {
-				//alert(response);
-				console.log("response", response);
-				$('#student_id_show').html(response);
+				refreshSelect2($('#student_id_show'), response, student_id);
+			},
+			error: function(xhr) {
+				console.error("Error fetching students:", xhr.responseText);
 			}
 		});
 	}
-</script>
-<script type="text/javascript">
+
+	function getClassInfoByBranch(branchID, class_id, student_id) {
+		if (!branchID) {
+			refreshSelect2($('#class_id'), '<option value="">First Select the Branch</option>');
+			refreshSelect2($('#student_id_show'), '<option value="">Select Student</option>');
+			return;
+		}
+
+		$.ajax({
+			url: base_url + "ajax/getClassByBranch",
+			type: "POST",
+			data: {
+				branch_id: branchID,
+				'<?= $csrfName ?>': '<?= $csrfHash ?>'
+			},
+			success: function(data) {
+				refreshSelect2($('#class_id'), data, class_id);
+				if (class_id) {
+					getStudentInfoByBatch(class_id, student_id);
+				} else {
+					refreshSelect2($('#student_id_show'), '<option value="">Select Student</option>');
+				}
+			},
+			error: function(xhr) {
+				console.error("Error fetching classes:", xhr.responseText);
+			}
+		});
+	}
+
 	$(document).ready(function() {
 		$("#roll").autocomplete({
 			source: function(request, response) {
@@ -28,7 +85,7 @@
 					url: base_url + "student/roll_load",
 					data: {
 						parameter: request.term,
-						<?php echo $this->security->get_csrf_token_name(); ?>: '<?php echo $this->security->get_csrf_hash(); ?>'
+						'<?= $csrfName ?>': '<?= $csrfHash ?>'
 					},
 					type: "POST",
 					dataType: "JSON",
@@ -36,57 +93,28 @@
 						response(data);
 					}
 				});
-
 			},
 			select: function(event, ui) {
 				$('#roll').val(ui.item.label);
 				return false;
 			}
 		});
+
+		$(document).on('change', '#branch_id', function() {
+			getClassInfoByBranch($(this).val());
+		});
+
+		$(document).on('change', '#class_id', function() {
+			getStudentInfoByBatch($(this).val());
+		});
+
+		var initialBranchId = $('#branch_id').val();
+		var selectedClassId = <?= json_encode((string) $selectedClassId) ?>;
+		var selectedStudentId = <?= json_encode((string) $selectedStudentId) ?>;
+		if (initialBranchId) {
+			getClassInfoByBranch(initialBranchId, selectedClassId, selectedStudentId);
+		}
 	});
-	
-    function getStudentInfoByBatch(class_id) {
-        var branch_id = $('#branch_id').val();
-        
-        // alert();
-        $.ajax({
-            url: base_url + "ajax/getStudentByBatch",
-            type: 'POST',
-            data: {
-                class_id: class_id,
-                branch_id: branch_id,
-                <?php echo $this->security->get_csrf_token_name(); ?>: '<?php echo $this->security->get_csrf_hash(); ?>'
-            },
-            success: function(response) {
-                //alert(response);
-                console.log("response", response);
-                $('#student_id_show').html(response);
-            },
-            error: function(xhr, status, error) {
-                console.error("Error fetching students:", xhr.responseText);
-            }
-        });
-    }
-
-    function getClassInfoByBranch(branchID) {
-        if (!branchID) return; // Prevents AJAX call if no branch is selected
-
-        $.ajax({
-            url: base_url + "ajax/getClassByBranch",
-            type: "POST",
-            data: {
-                branch_id: branchID,
-                <?php echo $this->security->get_csrf_token_name(); ?>: '<?php echo $this->security->get_csrf_hash(); ?>'
-            },
-            success: function(data) {
-                console.log("Received data:", data);
-                $("#class_id").html(data);
-            },
-            error: function(xhr, status, error) {
-                console.error("Error fetching classes:", xhr.responseText);
-            }
-        });
-    }
 </script>
 <div class="row">
 	<div class="col-md-12">
@@ -103,30 +131,30 @@
 								<label class="control-label"><?= translate('branch') ?> <span class="required">*</span></label>
 								<?php
 								$arrayBranch = $this->app_lib->getSelectList('branch');
+								$currentBranch = set_value('branch_id', isset($branch_id) ? $branch_id : '');
 								?>
-								<select onchange="getClassInfoByBranch(this.value)" class="form-control" id="branch_id" data-plugin-selecttwo name="branch_id">
-
+								<select class="form-control" id="branch_id" data-plugin-selectTwo data-width="100%" name="branch_id">
 									<?php foreach ($arrayBranch as $key => $value): ?>
-										<option value="<?= htmlspecialchars($key) ?>"><?= htmlspecialchars($value) ?></option>
+										<option value="<?= html_escape($key) ?>" <?= (string) $key === (string) $currentBranch ? 'selected' : '' ?>><?= html_escape($value) ?></option>
 									<?php endforeach; ?>
 								</select>
 							</div>
 						</div>
+					<?php else: ?>
+						<input type="hidden" id="branch_id" name="branch_id" value="<?= html_escape($branch_id) ?>">
 					<?php endif; ?>
 					<div class="col-md-3 mb-sm">
 						<div class="form-group">
 							<label class="control-label"><?= translate('batch') ?> <span class="required">*</span></label>
-
-							<select onchange='getStudentInfoByBatch(this.value)' class="form-control" id="class_id" data-plugin-selecttwo name="class_id">
-
-								<option value=""> First Select the Branch</option>
+							<select class="form-control" id="class_id" data-plugin-selectTwo data-width="100%" name="class_id">
+								<option value="">First Select the Branch</option>
 							</select>
 						</div>
 					</div>
 					<div class="col-md-3 mb-sm">
 						<div class="form-group">
 							<label class="control-label">Student</label>
-							<select class="form-control" id="student_id_show" data-plugin-selecttwo name="student_id">
+							<select class="form-control" id="student_id_show" data-plugin-selectTwo data-width="100%" name="student_id">
 								<option value="">Select Student</option>
 							</select>
 						</div>
@@ -245,28 +273,6 @@
 </div>
 
 <script type="text/javascript">
-	function getClassInfoByBranch(branchID) {
-		console.log("Get Class By Branch called with branchID: ", branchID);
-		if (!branchID) return; // Prevents AJAX call if no branch is selected
-
-		$.ajax({
-			url: base_url + "Ajax/getClassByBranch",
-			type: "POST",
-			data: {
-				branch_id: branchID,
-				<?php echo $this->security->get_csrf_token_name(); ?>: '<?php echo $this->security->get_csrf_hash(); ?>'
-			},
-			success: function(data) {
-				console.log("Received data:", data);
-				$("#class_id").html(data);
-			},
-			error: function(xhr, status, error) {
-				console.error("Error fetching classes:", xhr.responseText);
-			}
-		});
-	}
-
-
 	$(document).ready(function() {
 
 		$('form.printIn').on('submit', function(e) {

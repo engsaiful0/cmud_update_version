@@ -1,5 +1,4 @@
 <?php
-$widget = (is_superadmin_loggedin() ? 4 : 6);
 $currency_symbol = $global_config['currency_symbol'];
 ?>
 <div class="row">
@@ -10,6 +9,9 @@ $currency_symbol = $global_config['currency_symbol'];
 			</header>
 			<?php echo form_open($this->uri->uri_string(), array('class' => 'validate')); ?>
 			<div class="panel-body">
+				<?php if (!empty($report_error)): ?>
+					<div class="alert alert-danger"><?= html_escape($report_error) ?></div>
+				<?php endif; ?>
 				<div class="row">
 					<?php if (is_superadmin_loggedin()) : ?>
 						<div class="col-md-3">
@@ -18,7 +20,7 @@ $currency_symbol = $global_config['currency_symbol'];
 								<?php
 								$arrayBranch = $this->app_lib->getSelectList('branch');
 								echo form_dropdown("branch_id", $arrayBranch, set_value('branch_id'), "class='form-control' id='branch_id'
-								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'");
+								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0'");
 								?>
 							</div>
 						</div>
@@ -28,8 +30,8 @@ $currency_symbol = $global_config['currency_symbol'];
 							<label class="control-label">Batch <span class="required">*</span></label>
 							<?php
 							$arrayClass = $this->app_lib->getClass($branch_id);
-							echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' onchange='getStudentByBatch(this.value)'
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+							echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' required
+								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0' ");
 							?>
 						</div>
 					</div>
@@ -37,9 +39,8 @@ $currency_symbol = $global_config['currency_symbol'];
 						<div class="form-group">
 							<label class="control-label">Student</label>
 							<?php
-							$arrayClass = $this->app_lib->getClass($branch_id);
-							echo form_dropdown("student_id", '', set_value('student_id'), "class='form-control' data-plugin-selectTwo id='student_id_show' 
-								 data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+							echo form_dropdown("student_id", array('' => 'Select batch first'), set_value('student_id'), "class='form-control' id='student_id_show'
+								 data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0' ");
 							?>
 						</div>
 					</div>
@@ -52,48 +53,6 @@ $currency_symbol = $global_config['currency_symbol'];
 							</div>
 						</div>
 					</div>
-					<div style="display: none;" class="col-md-<?php echo $widget; ?> mb-sm">
-						<div class="form-group">
-							<label class="control-label"><?= translate('section') ?> <span class="required">*</span></label>
-							<?php
-							$arraySection = $this->app_lib->getSections(set_value('class_id'), false);
-							echo form_dropdown("section_id", $arraySection, set_value('section_id'), "class='form-control' id='section_id' required
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-							?>
-						</div>
-					</div>
-				</div>
-				<script>
-						function getStudentByBatch(class_id) {
-							alert("Student Fees Report");
-							var branch_id = $('#branch_id').val();
-							var student_id = $('#student_id').val();
-							$.ajax({
-								url: base_url + 'ajax/getStudentByBatch',
-								type: 'POST',
-								data: {
-									class_id: class_id,
-									branch_id: branch_id,
-									student_id: student_id,
-								},
-								success: function(response) {
-									console.log("response fdfdf",response);
-									$('#student_id_show').html(response);
-								}
-							});
-						}
-					</script>
-				<div class="row mb-sm">
-					<div style="display: none;" class="col-md-4 mb-sm">
-						<div class="form-group">
-							<label class="control-label"><?= translate('fees_type') ?></label>
-							<select data-plugin-selectTwo class="form-control" name="fees_type" id="feesType">
-
-							</select>
-						</div>
-					</div>
-
-
 				</div>
 			</div>
 			<footer class="panel-footer">
@@ -196,6 +155,7 @@ $currency_symbol = $global_config['currency_symbol'];
 
 <script type="text/javascript">
 	$(document).ready(function() {
+		if ($('#rowGroup').length) {
 		$('#rowGroup').DataTable({
 			dom: '<"row"<"col-sm-6 mb-xs"B><"col-sm-6"f>><"table-responsive"t>p',
 			autoWidth: false,
@@ -216,7 +176,7 @@ $currency_symbol = $global_config['currency_symbol'];
 					titleAttr: 'Copy',
 					title: $('.export_title').html(),
 					exportOptions: {
-						columns: ':visible'
+						columns: [0, 1, 2, 3, 4, 5, 6]
 					}
 				},
 				{
@@ -225,7 +185,7 @@ $currency_symbol = $global_config['currency_symbol'];
 					titleAttr: 'Excel',
 					title: $('.export_title').html(),
 					exportOptions: {
-						columns: ':visible'
+						columns: [0, 1, 2, 3, 4, 5, 6]
 					}
 				},
 				{
@@ -234,7 +194,7 @@ $currency_symbol = $global_config['currency_symbol'];
 					titleAttr: 'CSV',
 					title: $('.export_title').html(),
 					exportOptions: {
-						columns: ':visible'
+						columns: [0, 1, 2, 3, 4, 5, 6]
 					}
 				},
 				{
@@ -249,7 +209,7 @@ $currency_symbol = $global_config['currency_symbol'];
 						win.styles.tableHeader.alignment = 'left';
 					},
 					exportOptions: {
-						columns: ':visible'
+						columns: [0, 1, 2, 3, 4, 5, 6]
 					}
 				},
 				{
@@ -270,7 +230,7 @@ $currency_symbol = $global_config['currency_symbol'];
 					},
 					footer: true,
 					exportOptions: {
-						columns: ':visible'
+						columns: [0, 1, 2, 3, 4, 5, 6]
 					}
 				},
 				{
@@ -284,54 +244,59 @@ $currency_symbol = $global_config['currency_symbol'];
 		});
 
 
-		var branchID = "<?= $branch_id ?>";
-		var typeID = "<?= set_value('fees_type') ?>";
-		var classID = "<?= set_value('class_id') ?>";
-		var sectionID = "<?= set_value('section_id') ?>";
-		getTypeByBranch(branchID, typeID);
-		getStudentByClass(branchID, classID, sectionID);
+		}
+		var studentRequest, batchRequest;
+		var $filter = $('button[name="search"]');
+		loadReportStudents();
 
 		$('#branch_id').on('change', function() {
-			var branchID = $(this).val();
-			getClassByBranch(branchID);
-			getTypeByBranch(branchID);
-
-		});
-
-		$('#section_id').on('change', function() {
-			var section_id = $(this).val();
-			var class_id = $('#class_id').val();
-			var branch_id = ($("#branch_id").length ? $('#branch_id').val() : "");
-			getStudentByClass(branch_id, class_id, section_id);
-		});
-
-		function getStudentByClass(branch_id, class_id, section_id) {
-			var student_id = "<?= set_value('student_id') ?>";
-			$.ajax({
-				url: base_url + 'ajax/getStudentByClass',
+			if (studentRequest) studentRequest.abort();
+			if (batchRequest) batchRequest.abort();
+			$('#student_id_show').empty().trigger('change');
+			$('#class_id').empty().prop('disabled', true).trigger('change.select2');
+			$filter.prop('disabled', true);
+			batchRequest = $.ajax({
+				url: base_url + 'ajax/getClassByBranch',
 				type: 'POST',
-				data: {
-					branch_id: branch_id,
-					class_id: class_id,
-					section_id: section_id,
-					student_id: student_id
-				},
+				data: {branch_id: $(this).val()},
 				success: function(data) {
-					$('#student_id').html(data);
+					$('#class_id').html(data).prop('disabled', false).trigger('change');
+				},
+				error: function(xhr, status) {
+					if (status !== 'abort') {
+						$('#class_id').append($('<option>', {value: '', text: 'Unable to load batches. Select the branch again.'})).prop('disabled', false).trigger('change.select2');
+					}
 				}
 			});
-		}
+		});
 
-		function getTypeByBranch(branchID, typeID) {
-			$.ajax({
-				url: base_url + 'fees/getTypeByBranch',
+		$('#class_id').on('change', function() {
+			loadReportStudents('');
+		});
+
+
+		function loadReportStudents(studentID) {
+			if (studentRequest) studentRequest.abort();
+			var $students = $('#student_id_show');
+			$students.empty().prop('disabled', true).trigger('change');
+			$filter.prop('disabled', true);
+			studentRequest = $.ajax({
+				url: base_url + 'ajax/getStudentByBatch',
 				type: 'POST',
+				dataType: 'html',
 				data: {
-					'branch_id': branchID,
-					'type_id': typeID
+					branch_id: $('#branch_id').length ? $('#branch_id').val() : <?= json_encode($branch_id) ?>,
+					class_id: $('#class_id').val(),
+					student_id: typeof studentID === 'undefined' ? <?= json_encode(set_value('student_id')) ?> : studentID
 				},
 				success: function(data) {
-					$('#feesType').html(data);
+					$students.html(data).prop('disabled', false).trigger('change');
+					$filter.prop('disabled', false);
+				},
+				error: function(xhr, status) {
+					if (status !== 'abort') {
+						$students.empty().append($('<option>', {value: '', text: 'Unable to load students. Please select the batch again.'})).prop('disabled', false).trigger('change');
+					}
 				}
 			});
 		}

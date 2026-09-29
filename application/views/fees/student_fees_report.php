@@ -54,6 +54,7 @@ $currency_symbol = $global_config['currency_symbol'];
 						</div>
 					</div>
 				</div>
+				<p class="help-block">Leave Student unselected to include all students in the batch. The date range filters payment dates.</p>
 			</div>
 			<footer class="panel-footer">
 				<div class="row">
@@ -65,6 +66,9 @@ $currency_symbol = $global_config['currency_symbol'];
 			<?php echo form_close(); ?>
 		</section>
 		<?php if (isset($invoicelist)) : ?>
+			<?php if (empty($invoicelist)): ?>
+				<div class="alert alert-info">No payments found for the selected batch, student and date range.</div>
+			<?php endif; ?>
 			<style type="text/css">
 				tr.group {
 					font-weight: 600 !important;

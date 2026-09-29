@@ -13,7 +13,7 @@ $options = $db[$active_group];
 $options['dbprefix'] = 'report_test_';
 $options['db_debug'] = false;
 $connection = DB($options, true);
-foreach (array('student', 'fee_payment_history', 'payment_types', 'class') as $table) {
+foreach (array('student', 'fee_payment_history', 'payment_types', 'class', 'subject') as $table) {
     if (!$connection->query('CREATE TEMPORARY TABLE report_test_' . $table . ' LIKE ' . $table)) {
         throw new RuntimeException('Cannot create temporary test table: ' . $table);
     }
@@ -33,17 +33,29 @@ foreach (array(array(1, 1, 10), array(2, 1, 10), array(3, 2, 10), array(4, 1, 20
     $connection->insert('fee_payment_history', array('id' => $row[0], 'student_id' => $row[0], 'amount' => 100, 'discount' => 5, 'fine' => 2, 'date' => '2025-01-21'));
 }
 $connection->insert('class', array('id' => 10, 'branch_id' => 1, 'name' => 'Test batch'));
-$rows = $model->getStuPaymentReport(10, '', '', '', '2025-01-21', '2025-01-21', 1);
+$rows = $model->getStuPaymentReport(10, '', '', '2025-01-21', '2025-01-21', 1);
 check(count($rows) === 2, 'batch report includes both students and excludes other branches/batches');
 check(array_sum(array_column($rows, 'amount')) == 200, 'payment amounts are preserved');
-check(count($model->getStuPaymentReport(10, '', 2, '', '2025-01-21', '2025-01-21', 1)) === 1, 'individual student filter');
-check(count($model->getStuPaymentReport(10, '', 3, '', '2025-01-21', '2025-01-21', 1)) === 0, 'student from another branch excluded');
-check(count($model->getStuPaymentReport(10, '', '', '', '2025-01-22', '2025-01-22', 1)) === 0, 'dates outside payment range return no rows');
+check(count($model->getStuPaymentReport(10, 2, '', '2025-01-21', '2025-01-21', 1)) === 1, 'individual student filter');
+check(count($model->getStuPaymentReport(10, 3, '', '2025-01-21', '2025-01-21', 1)) === 0, 'student from another branch excluded');
+check(count($model->getStuPaymentReport(10, '', '', '2025-01-22', '2025-01-22', 1)) === 0, 'dates outside payment range return no rows');
 class Admin_Controller {}
 require APPPATH . 'controllers/Fees.php';
 class ReportInput { public $values; public function post($key) { return $this->values[$key] ?? null; } }
 class ReportBranch { public function get_branch_id() { return 1; } }
 class ReportLoader { public function view($name, $data) {} }
+require APPPATH . 'controllers/Ajax.php';
+$ajax = (new ReflectionClass('Ajax'))->newInstanceWithoutConstructor();
+$ajax->input = new ReportInput();
+$ajax->application_model = new ReportBranch();
+$ajax->db = $connection;
+$ajax->input->values = array('class_id' => 10, 'student_id' => 2);
+ob_start(); $ajax->getStudentByBatch(); $studentOptions = ob_get_clean();
+check(strpos($studentOptions, 'value="2" selected') !== false, 'AJAX restores selected student');
+check(strpos($studentOptions, 'value="1"') !== false && strpos($studentOptions, 'value="3"') === false && strpos($studentOptions, 'value="4"') === false, 'AJAX students are scoped to batch and branch');
+$ajax->input->values = array('class_id' => '');
+ob_start(); $ajax->getStudentByBatch(); $studentOptions = ob_get_clean();
+check(strpos($studentOptions, 'select_batch_first') !== false, 'AJAX handles cleared batch');
 $controller = (new ReflectionClass('Fees'))->newInstanceWithoutConstructor();
 $controller->input = new ReportInput();
 $controller->application_model = new ReportBranch();

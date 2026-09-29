@@ -388,7 +388,7 @@ class Fees_model extends MY_Model
 
         return $result;
     }
-    public function getStuPaymentReport($classID = '', $sectionID = '', $studentID = '', $typeID = '', $start = '', $end = '', $branchID = '')
+    public function getStuPaymentReport($classID = '', $studentID = '', $typeID = '', $start = '', $end = '', $branchID = '')
     {
         $this->db->select('h.*,s.id as student_id,s.first_name,s.last_name,s.register_no,pt.name as pay_via');
         $this->db->from('fee_payment_history as h');

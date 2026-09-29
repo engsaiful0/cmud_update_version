@@ -991,7 +991,7 @@ class Fees extends Admin_Controller
             } elseif ($studentID && !$this->db->where(array('id' => $studentID, 'class_id' => $classID, 'branch_id' => $branchID))->count_all_results('student')) {
                 $this->data['report_error'] = 'Please select a student from the selected batch.';
             } else {
-                $this->data['invoicelist'] = $this->fees_model->getStuPaymentReport($classID, '', $studentID, '', $start->format('Y-m-d'), $end->format('Y-m-d'), $branchID);
+                $this->data['invoicelist'] = $this->fees_model->getStuPaymentReport($classID, $studentID, '', $start->format('Y-m-d'), $end->format('Y-m-d'), $branchID);
             }
         }
         $this->data['branch_id'] = $branchID;

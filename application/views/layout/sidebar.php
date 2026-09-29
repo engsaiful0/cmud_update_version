@@ -751,84 +751,8 @@
                             </ul>
                         </li>
                     <?php } ?>
-                    <?php if (get_permission('live_class', 'is_view')) { ?>
-                        <li style="display: none;" class="nav-parent <?php if ($main_menu == 'live_class') echo 'nav-expanded nav-active'; ?>">
-                            <a>
-                                <i class="icons icon-earphones-alt"></i><span><?= translate('live_class_rooms') ?></span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <li class="<?php if ($sub_page == 'live_class/index') echo 'nav-active'; ?>">
-                                    <a href="<?= base_url('live_class') ?>">
-                                        <span><i class="fas fa-caret-right" aria-hidden="true"></i> <?= translate('live_class_rooms') ?></span>
-                                    </a>
-                                </li>
-                                <li class="<?php if ($sub_page == 'live_class/reports') echo 'nav-active'; ?>">
-                                    <a href="<?= base_url('live_class/reports') ?>">
-                                        <span><i class="fas fa-caret-right" aria-hidden="true"></i> <?= translate(' live_class_reports') ?></span>
-                                    </a>
-                                </li>
-
-                            </ul>
-                        </li>
-                    <?php } ?>
-                    <?php
-                    if (
-                        get_permission('attachments', 'is_view') ||
-                        get_permission('attachment_type', 'is_view')
-                    ) {
-                    ?>
-                        <!-- attachments upload -->
-                        <li style="display: none;" class="nav-parent <?php if ($main_menu == 'attachments') echo 'nav-expanded nav-active'; ?>">
-                            <a>
-                                <i class="icons icon-cloud-upload"></i><span><?= translate('attachments_book') ?></span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <?php if (get_permission('attachments', 'is_view')) { ?>
-                                    <li class="<?php if ($sub_page == 'attachments/index') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('attachments') ?>">
-                                            <span><i class="fas fa-caret-right" aria-hidden="true"></i><?= translate('upload_content') ?></span>
-                                        </a>
-                                    </li>
-                                <?php }
-                                if (get_permission('attachment_type', 'is_view')) { ?>
-                                    <li class="<?php if ($sub_page == 'attachments/type') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('attachments/type') ?>">
-                                            <span><i class="fas fa-caret-right" aria-hidden="true"></i><?= translate('attachment_type') ?></span>
-                                        </a>
-                                    </li>
-                                <?php } ?>
-                            </ul>
-                        </li>
-                    <?php } ?>
-                    <?php
-                    if (
-                        get_permission('homework', 'is_view') ||
-                        get_permission('evaluation_report', 'is_view')
-                    ) {
-                    ?>
-                        <!-- attachments upload -->
-                        <li style="display: none;" class="nav-parent <?php if ($main_menu == 'homework') echo 'nav-expanded nav-active'; ?>">
-                            <a>
-                                <i class="icons icon-note"></i><span><?= translate('homework') ?></span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <?php if (get_permission('homework', 'is_view')) { ?>
-                                    <li class="<?php if ($sub_page == 'homework/index' || $sub_page == 'homework/add' || $sub_page == 'homework/evaluate_list' || $sub_page == 'homework/edit') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('homework') ?>">
-                                            <span><i class="fas fa-caret-right" aria-hidden="true"></i><?= translate('homework') ?></span>
-                                        </a>
-                                    </li>
-                                <?php }
-                                if (get_permission('evaluation_report', 'is_view')) { ?>
-                                    <li class="<?php if ($sub_page == 'homework/report') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('homework/report') ?>">
-                                            <span><i class="fas fa-caret-right" aria-hidden="true"></i><?= translate('evaluation_report') ?></span>
-                                        </a>
-                                    </li>
-                                <?php } ?>
-                            </ul>
-                        </li>
-                    <?php } ?>
+                   
+                  
                     <?php
                     if (
                         get_permission('exam', 'is_view') ||
@@ -1233,62 +1157,7 @@
                             </ul>
                         </li>
                     <?php } ?>
-                    <?php
-                    if (
-                        get_permission('sendsmsmail', 'is_add') ||
-                        get_permission('sendsmsmail_template', 'is_view') ||
-                        get_permission('student_birthday_wishes', 'is_view') ||
-                        get_permission('staff_birthday_wishes', 'is_view') ||
-                        get_permission('sendsmsmail_reports', 'is_view')
-                    ) {
-                    ?>
-                        <!-- SMS -->
-                        <li style="display: none;" class="nav-parent <?php if ($main_menu == 'sendsmsmail') echo 'nav-expanded nav-active'; ?>">
-                            <a>
-                                <i class="icons icon-bell"></i><span><?= translate('bulk_sms_and_email') ?></span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <?php if (get_permission('sendsmsmail', 'is_add')) {  ?>
-                                    <li class="<?php if ($sub_page == 'sendsmsmail/sms' || $sub_page == 'sendsmsmail/email') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('sendsmsmail/sms') ?>">
-                                            <span><i class="fas fa-caret-right"></i><?= translate('send') ?> Sms / Email</span>
-                                        </a>
-                                    </li>
-                                    <li class="<?php if ($sub_page == 'sendsmsmail/campaign_reports') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('sendsmsmail/campaign_reports') ?>">
-                                            <span><i class="fas fa-caret-right"></i>Sms / Email <?= translate('report') ?></span>
-                                        </a>
-                                    </li>
-                                <?php }
-                                if (get_permission('sendsmsmail_template', 'is_view')) {  ?>
-                                    <li class="<?php if ($sub_page == 'sendsmsmail/template_sms' || $sub_page == 'sendsmsmail/template_edit_sms') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('sendsmsmail/template/sms') ?>">
-                                            <span><i class="fas fa-caret-right"></i> <?= translate('sms') . " " . translate('template') ?></span>
-                                        </a>
-                                    </li>
-                                    <li class="<?php if ($sub_page == 'sendsmsmail/template_email' || $sub_page == 'sendsmsmail/template_edit_email') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('sendsmsmail/template/email') ?>">
-                                            <span><i class="fas fa-caret-right"></i> <?= translate('email') . " " . translate('template') ?></span>
-                                        </a>
-                                    </li>
-                                <?php }
-                                if (get_permission('student_birthday_wishes', 'is_view')) {  ?>
-                                    <li class="<?php if ($sub_page == 'birthday/student') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('birthday/student') ?>">
-                                            <span><i class="fas fa-caret-right"></i> Student Birthday Wishes</span>
-                                        </a>
-                                    </li>
-                                <?php }
-                                if (get_permission('staff_birthday_wishes', 'is_view')) {  ?>
-                                    <li class="<?php if ($sub_page == 'birthday/staff') echo 'nav-active'; ?>">
-                                        <a href="<?= base_url('birthday/staff') ?>">
-                                            <span><i class="fas fa-caret-right"></i> Staff Birthday Wishes</span>
-                                        </a>
-                                    </li>
-                                <?php } ?>
-                            </ul>
-                        </li>
-                    <?php } ?>
+                    
                     <?php
                     if (
                         get_permission('fees_type', 'is_view') ||
@@ -1423,9 +1292,7 @@
                                             <li class="<?php if ($sub_page == 'fees/student_fees_report') echo 'nav-active'; ?>">
                                                 <a href="<?= base_url('fees/student_fees_report') ?>"><?= translate('fees_report') ?></a>
                                             </li>
-                                            <li class="<?php if ($sub_page == 'fees/student_fees_report') echo 'nav-active'; ?>">
-                                                <a href="<?= base_url('fees/batch_wise_student_fees_report') ?>"><?= translate('batch_wise') ?></a>
-                                            </li>
+                                           
                                             
                                             <li class="<?php if ($sub_page == 'fees/payment_history') echo 'nav-active'; ?>">
                                                 <a href="<?= base_url('fees/payment_history') ?>"><?= translate('receipts_report') ?></a>
@@ -1433,9 +1300,7 @@
                                             <li class="<?php if ($sub_page == 'fees/due_report') echo 'nav-active'; ?>">
                                                 <a href="<?= base_url('fees/due_report') ?>"><?= translate('due_fees_report') ?></a>
                                             </li>
-                                            <li class="<?php if ($sub_page == 'fees/fine_report') echo 'nav-active'; ?>">
-                                                <a href="<?= base_url('fees/fine_report') ?>"><?= translate('fine_report') ?></a>
-                                            </li>
+                                          
 
 
                                         </ul>
@@ -1473,84 +1338,11 @@
                                         </ul>
                                     </li>
                                 <?php } ?>
-                                <?php if ($attendance_report == true) { ?>
-                                    <li class="nav-parent <?php if ($main_menu == 'attendance_report') echo 'nav-expanded nav-active'; ?>">
-                                        <a><i class="fas fa-print"></i><span><?php echo translate('attendance_reports'); ?></span></a>
-                                        <ul class="nav nav-children">
-                                            <?php if (get_permission('student_attendance_report', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'attendance/student_report') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('attendance/studentwise_report') ?>">
-                                                        <?= translate('student') . ' ' . translate('reports') ?>
-                                                    </a>
-                                                </li>
-                                            <?php }
-                                            if (get_permission('employee_attendance_report', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'attendance/employees_report') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('attendance/employeewise_report') ?>">
-                                                        <?= translate('employee') . ' ' . translate('reports') ?>
-                                                    </a>
-                                                </li>
-                                            <?php }
-                                            if (get_permission('exam_attendance_report', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'attendance/exam_report') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('attendance/examwise_report') ?>">
-                                                        <?= translate('exam') . ' ' . translate('reports') ?>
-                                                    </a>
-                                                </li>
-                                            <?php } ?>
-                                        </ul>
-                                    </li>
-                                <?php } ?>
+                              
 
-                                <?php if (get_permission('salary_summary_report', 'is_view') || get_permission('leave_reports', 'is_view')) { ?>
-                                    <li class="nav-parent <?php if ($main_menu == 'payroll_reports' || $main_menu == 'leave_reports') echo 'nav-expanded nav-active'; ?>">
-                                        <a><i class="fas fa-print"></i><span><?php echo translate('hrm'); ?></span></a>
-                                        <ul class="nav nav-children">
-                                            <?php if (get_permission('salary_summary_report', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'payroll/salary_statement') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('payroll/salary_statement') ?>">
-                                                        <span><?= translate('payroll_summary') ?></span>
-                                                    </a>
-                                                </li>
-                                            <?php }
-                                            if (get_permission('leave_reports', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'leave/reports') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('leave/reports') ?>">
-                                                        <span><?= translate('leave') . " " . translate('reports') ?></span>
-                                                    </a>
-                                                </li>
-                                            <?php } ?>
-                                        </ul>
-                                    </li>
-                                <?php } ?>
-                                <?php if (get_permission('report_card', 'is_view') || get_permission('tabulation_sheet', 'is_view') || get_permission('progress_reports', 'is_view')) { ?>
-                                    <li class="nav-parent <?php if ($main_menu == 'exam_reports') echo 'nav-expanded nav-active'; ?>">
-                                        <a><i class="fas fa-print"></i><span><?php echo translate('examination'); ?></span></a>
-                                        <ul class="nav nav-children">
-                                            <?php if (get_permission('report_card', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'exam/marksheet') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('exam/marksheet') ?>">
-                                                        <span><?= translate('report_card') ?></span>
-                                                    </a>
-                                                </li>
-                                            <?php }
-                                            if (get_permission('tabulation_sheet', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'exam/tabulation_sheet') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('exam/tabulation_sheet') ?>">
-                                                        <span><?= translate('tabulation_sheet') ?></span>
-                                                    </a>
-                                                </li>
-                                            <?php }
-                                            if (get_permission('progress_reports', 'is_view')) { ?>
-                                                <li class="<?php if ($sub_page == 'exam_progress/marksheet') echo 'nav-active'; ?>">
-                                                    <a href="<?= base_url('exam_progress/marksheet') ?>">
-                                                        <span><?= translate('progress') . " " . translate('reports') ?></span>
-                                                    </a>
-                                                </li>
-                                            <?php } ?>
-                                        </ul>
-                                    </li>
-                                <?php } ?>
+                            
+
+                             
                             </ul>
                         </li>
                     <?php } ?>

@@ -20,6 +20,9 @@ foreach (array('student', 'fee_payment_history', 'payment_types', 'class', 'subj
 }
 $context = (object) array('db' => $connection);
 function &get_instance() { global $context; return $context; }
+if (!function_exists('is_superadmin_loggedin')) { function is_superadmin_loggedin() { return true; } }
+if (!function_exists('get_loggedin_branch_id')) { function get_loggedin_branch_id() { return 1; } }
+function base_url($path = '') { return 'http://localhost/cmud/' . $path; }
 function get_session_id() { return 4; }
 function get_permission($module, $action) { return true; }
 function translate($key) { return $key; }
@@ -41,9 +44,10 @@ check(count($model->getStuPaymentReport(10, 3, '', '2025-01-21', '2025-01-21', 1
 check(count($model->getStuPaymentReport(10, '', '', '2025-01-22', '2025-01-22', 1)) === 0, 'dates outside payment range return no rows');
 class Admin_Controller {}
 require APPPATH . 'controllers/Fees.php';
-class ReportInput { public $values; public function post($key) { return $this->values[$key] ?? null; } }
+class ReportInput { public $values; public function get($key) { return $this->values[$key] ?? null; } public function post($key) { return $this->values[$key] ?? null; } }
 class ReportBranch { public function get_branch_id() { return 1; } }
-class ReportLoader { public function view($name, $data) {} }
+class ReportPagination { public function initialize($config) {} public function create_links() { return ''; } }
+class ReportLoader { public function library($name) {} public function view($name, $data) {} }
 require APPPATH . 'controllers/Ajax.php';
 $ajax = (new ReflectionClass('Ajax'))->newInstanceWithoutConstructor();
 $ajax->input = new ReportInput();
@@ -62,21 +66,22 @@ $controller->application_model = new ReportBranch();
 $controller->load = new ReportLoader();
 $controller->db = $connection;
 $controller->fees_model = $model;
+$controller->pagination = new ReportPagination();
 foreach (array(
     array('2025/01/21 - 2025/01/21', 10, '', false),
     array('2025/01/21 - 2025/01/21', 10, 1, false),
-    array('2025/01/21 - 2025/01/21', 10, 3, true),
-    array('2025/01/21 - 2025/01/21', '', '', true),
-    array('2025/01/21 - 2025/01/21', 999, '', true),
+    array('2025/01/21 - 2025/01/21', 10, 3, false),
+    array('2025/01/21 - 2025/01/21', '', '', false),
+    array('2025/01/21 - 2025/01/21', 999, '', false),
     array('invalid', 10, '', true),
     array('2025/02/30 - 2025/03/01', 10, '', true),
     array('2025/01/22 - 2025/01/21', 10, '', true)
 ) as $case) {
     $controller->data = array();
-    $controller->input->values = array('search' => 1, 'class_id' => $case[1], 'student_id' => $case[2], 'daterange' => $case[0]);
+    $controller->input->values = array('branch_id' => 1, 'search' => 1, 'class_id' => $case[1], 'student_id' => $case[2], 'daterange' => $case[0]);
     $controller->student_fees_report();
     check(isset($controller->data['report_error']) === $case[3], 'controller validation ' . json_encode($case));
-    check(isset($controller->data['invoicelist']) !== $case[3], 'query runs only for valid filters');
+    check(!$case[3] || empty($controller->data['invoicelist']), 'invalid dates do not produce rows');
 }
 
 // Batch summaries must keep separate students even when roll values match.

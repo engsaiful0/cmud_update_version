@@ -8,17 +8,18 @@ $currency_symbol = $global_config['currency_symbol'];
 			<header class="panel-heading">
 				<h4 class="panel-title"><?=translate('select_ground')?></h4>
 			</header>
-			<?php echo form_open($this->uri->uri_string(), array('class' => 'validate'));?>
+			<?php echo form_open($this->uri->uri_string(), array('method' => 'get', 'id' => 'student-report-filters'));?>
 			<div class="panel-body">
+<?php if (!empty($report_error)): ?><div class="alert alert-danger"><?= html_escape($report_error) ?></div><?php endif; ?>
 				<div class="row mb-sm">
 				<?php if (is_superadmin_loggedin() ): ?>
 					<div class="col-md-3">
 						<div class="form-group">
-							<label class="control-label"><?=translate('branch')?> <span class="required">*</span></label>
+							<label class="control-label"><?=translate('branch')?></label>
 							<?php
-								$arrayBranch = $this->app_lib->getSelectList('branch');
-								echo form_dropdown("branch_id", $arrayBranch, set_value('branch_id'), "class='form-control' id='branch_id' onchange='getClassByBranch(this.value)'
-								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'");
+								$arrayBranch = array('' => 'All branches') + $this->app_lib->getSelectList('branch');
+								echo form_dropdown("branch_id", $arrayBranch, $branch_id, "class='form-control' id='branch_id'
+								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0'");
 							?>
 						</div>
 					</div>
@@ -27,37 +28,45 @@ $currency_symbol = $global_config['currency_symbol'];
 						<div class="form-group">
 							<label class="control-label">Batch</label>
 							<?php
-								$arrayClass = $this->app_lib->getClass($branch_id);
-								echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id'
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+								$arrayClass = array('' => 'All batches') + array_column($filter_classes, 'name', 'id');
+								echo form_dropdown("class_id", $arrayClass, $class_id, "class='form-control' id='class_id'
+								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0' ");
 							?>
 						</div>
 					</div>
 					<div class="col-md-<?php echo $widget; ?> mb-sm">
 						<div class="form-group">
-							<label class="control-label"><?=translate('payment_via')?> <span class="required">*</span></label>
+							<label class="control-label"><?=translate('payment_via')?></label>
 							<?php
 								$arrayVia = array(
-									'' => translate('select'),
+									'' => 'All payment channels',
 									'all' => translate('both'),
 									'online' => "Online",
 									'cash' => "Cash",
 								);
-								echo form_dropdown("payment_via", $arrayVia, set_value('payment_via'), "class='form-control' required
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+								echo form_dropdown("payment_via", $arrayVia, $payment_via, "class='form-control'
+								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0' ");
 							?>
 						</div>
 					</div>
 					<div class="col-md-<?php echo $widget; ?> mb-sm">
 						<div class="form-group">
-							<label class="control-label"><?php echo translate('date'); ?> <span class="required">*</span></label>
+							<label class="control-label"><?php echo translate('date'); ?></label>
 							<div class="input-group">
 								<span class="input-group-addon"><i class="fas fa-calendar-check"></i></span>
-								<input type="text" class="form-control daterange" name="daterange" value="<?php echo set_value('daterange', date("Y/m/d") . ' - ' . date("Y/m/d")); ?>" required />
+								<input type="text" class="form-control" id="report-daterange" name="daterange" placeholder="All dates" value="<?= html_escape($daterange) ?>" />
 							</div>
 						</div>
 					</div>
 				</div>
+                <div class="form-group">
+                    <label for="report-limit">Rows per page</label>
+                    <select name="limit" id="report-limit" class="form-control" style="width: 120px">
+                        <?php foreach (array('100', '200', '300', '400', '500', '1000', 'all') as $size): ?>
+                            <option value="<?= $size ?>" <?= $page_limit === $size ? 'selected' : '' ?>><?= $size === 'all' ? 'All' : $size ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div><p class="help-block">All filters are optional. Leave a filter blank to include all matching records.</p>
 			</div>
 			<footer class="panel-footer">
 				<div class="row">
@@ -74,9 +83,10 @@ $currency_symbol = $global_config['currency_symbol'];
 				<h4 class="panel-title"><i class="fas fa-list-ol"></i> <?=translate('fees_payment_history');?></h4>
 			</header>
 			<div class="panel-body">
+<?php if (!empty($report_error)): ?><div class="alert alert-danger"><?= html_escape($report_error) ?></div><?php endif; ?>
 				<div class="mb-md mt-md">
 					<div class="export_title"><?=translate('fees_payment_history')?></div>
-					<table class="table table-bordered table-condensed table-hover mb-none tbr-top table-export">
+					<table class="table table-bordered table-condensed table-hover mb-none tbr-top">
 						<thead>
 							<tr>
 								<th><?=translate('sl')?></th>
@@ -94,9 +104,9 @@ $currency_symbol = $global_config['currency_symbol'];
 								<th><?=translate('total')?></th>
 							</tr>
 						</thead>
-						<tbody>
+						<tbody><?php if (empty($invoicelist)): ?><tr><td colspan="10" class="text-center">No payments found.</td></tr><?php endif; ?>
 							<?php
-							$count = 1;
+							$count = $report_offset + 1;
 							$totalamount = 0;
 							$totaldiscount = 0;
 							$totalfine = 0;
@@ -148,10 +158,28 @@ $currency_symbol = $global_config['currency_symbol'];
 								<th><?php echo ($currency_symbol . number_format($total, 2, '.', '')); ?></th>
 							</tr>
 						</tfoot>
-					</table>
+					</table><p class="mt-md">Showing <?= $report_total ? $report_offset + 1 : 0 ?>–<?= $report_offset + count($invoicelist) ?> of <?= $report_total ?> payments. Totals shown are for this page.</p><?= $pagination_links ?>
 				</div>
 			</div>
 		</section>
 <?php endif; ?>
 	</div>
 </div>
+
+<script type="text/javascript">
+$(function() {
+    var $form = $('#student-report-filters');
+    $('#branch_id').on('change', function() {
+        $('#class_id').val('');
+        $form[0].submit();
+    });
+    $('#report-limit').on('change', function() { $form[0].submit(); });
+    $('#report-daterange').daterangepicker({
+        autoUpdateInput: false,
+        locale: {format: 'YYYY/MM/DD', cancelLabel: 'Clear'},
+        opens: 'left'
+    }).on('apply.daterangepicker', function(event, picker) {
+        $(this).val(picker.startDate.format('YYYY/MM/DD') + ' - ' + picker.endDate.format('YYYY/MM/DD'));
+    }).on('cancel.daterangepicker', function() { $(this).val(''); });
+});
+</script>

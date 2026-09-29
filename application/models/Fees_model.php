@@ -332,19 +332,36 @@ class Fees_model extends MY_Model
         return $this->db->get()->row_array();
     }
 
-    public function getStuPaymentHistory($classID = '', $SectionID = '', $paymentVia = '', $start = '', $end = '', $branchID = '', $onlyFine = false)
+    public function getStuPaymentHistory($classID = '', $SectionID = '', $paymentVia = '', $start = '', $end = '', $branchID = '', $onlyFine = false, $limit = null, $offset = 0)
     {
         $this->db->select('h.*,s.id as student_id,s.roll,s.first_name,s.last_name,s.register_no,s.mobileno,c.name as class_name,pt.name as pay_via');
+        $this->paymentHistoryQuery($classID, $paymentVia, $start, $end, $branchID, $onlyFine);
+        $this->db->join('class as c', 'c.id = s.class_id', 'left');
+        $this->db->join('payment_types as pt', 'pt.id = h.pay_via', 'left');
+        $this->db->order_by('h.id', 'asc');
+        if ($limit !== null) $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    public function countStuPaymentHistory($classID = '', $paymentVia = '', $start = '', $end = '', $branchID = '')
+    {
+        $this->paymentHistoryQuery($classID, $paymentVia, $start, $end, $branchID, false);
+        return $this->db->count_all_results();
+    }
+
+    private function paymentHistoryQuery($classID, $paymentVia, $start, $end, $branchID, $onlyFine)
+    {
         $this->db->from('fee_payment_history as h');
 
         $this->db->join('student as s', 's.id = h.student_id', 'left');
-        $this->db->join('class as c', 'c.id = s.class_id', 'left');
-
-        $this->db->join('payment_types as pt', 'pt.id = h.pay_via', 'left');
         $this->db->where('h.session_id', get_session_id());
-        $this->db->where('h.date  >=', $start);
-        $this->db->where('h.date <=', $end);
-        $this->db->where('s.branch_id', $branchID);
+        if ($start !== '') $this->db->where('h.date >=', $start);
+        if ($end !== '') $this->db->where('h.date <=', $end);
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('s.branch_id', get_loggedin_branch_id());
+        } elseif ($branchID !== '' && $branchID !== null) {
+            $this->db->where('s.branch_id', $branchID);
+        }
         if ($onlyFine == true) {
             $this->db->where('h.fine !=', 0);
         }
@@ -352,16 +369,13 @@ class Fees_model extends MY_Model
             $this->db->where('s.class_id', $classID);
         }
 
-        if ($paymentVia != 'all') {
+        if ($paymentVia !== '' && $paymentVia != 'all') {
             if ($paymentVia == 'online') {
                 $this->db->where('h.collect_by', 'online');
             } else {
                 $this->db->where('h.collect_by !=', 'online');
             }
         }
-        $this->db->order_by('h.id', 'asc');
-        $result = $this->db->get()->result_array();
-        return $result;
     }
     public function getBatchWisePaymentReport($classID = '', $studentID = '', $branchID = '')
     {
@@ -396,26 +410,40 @@ class Fees_model extends MY_Model
 
         return $result;
     }
-    public function getStuPaymentReport($classID = '', $studentID = '', $typeID = '', $start = '', $end = '', $branchID = '')
+    public function getStuPaymentReport($classID = '', $studentID = '', $typeID = '', $start = '', $end = '', $branchID = '', $limit = 100, $offset = 0)
     {
         $this->db->select('h.*,s.id as student_id,s.first_name,s.last_name,s.register_no,pt.name as pay_via');
+        $this->studentPaymentReportQuery($classID, $studentID, $start, $end, $branchID);
+        $this->db->join('payment_types as pt', 'pt.id = h.pay_via', 'left');
+        $this->db->order_by('h.id', 'asc');
+        if ($limit !== null) $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    public function countStuPaymentReport($classID = '', $studentID = '', $start = '', $end = '', $branchID = '')
+    {
+        $this->studentPaymentReportQuery($classID, $studentID, $start, $end, $branchID);
+        return $this->db->count_all_results();
+    }
+
+    private function studentPaymentReportQuery($classID, $studentID, $start, $end, $branchID)
+    {
         $this->db->from('fee_payment_history as h');
         $this->db->join('student as s', 's.id = h.student_id', 'left');
-        $this->db->join('payment_types as pt', 'pt.id = h.pay_via', 'left');
         $this->db->where('s.session_id', get_session_id());
-        $this->db->where('h.date  >=', $start);
-        $this->db->where('h.date <=', $end);
-        $this->db->where('s.branch_id', $branchID);
-        $this->db->where('s.class_id', $classID);
+        if ($start !== '') $this->db->where('h.date >=', $start);
+        if ($end !== '') $this->db->where('h.date <=', $end);
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('s.branch_id', get_loggedin_branch_id());
+        } elseif ($branchID !== '' && $branchID !== null) {
+            $this->db->where('s.branch_id', $branchID);
+        }
+        if ($classID !== '') $this->db->where('s.class_id', $classID);
 
         if (!empty($studentID)) {
             $this->db->where('s.id', $studentID);
         }
 
-        $this->db->order_by('h.id', 'asc');
-        $result = $this->db->get()->result_array();
-
-        return $result;
     }
 
     public function getfeeGroup($studentID = '')

@@ -6,7 +6,7 @@ function translate($s) { return $s; }
 function html_escape($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 function is_superadmin_loggedin() { return true; }
 function set_value($key, $default = '') { return array('branch_id' => 1, 'class_id' => 10, 'student_id' => 2)[$key] ?? $default; }
-function form_open($url, $attrs) { return '<form>'; }
+function form_open($url, $attrs) { return '<form id="' . ($attrs['id'] ?? '') . '" method="' . ($attrs['method'] ?? 'post') . '">'; }
 function form_close() { return '</form>'; }
 function form_dropdown($name, $options, $selected, $attrs) {
     $html = '<select name="' . $name . '" ' . $attrs . '>';
@@ -28,6 +28,10 @@ class ReportViewFixture {
             if ($report) $invoicelist = array(array('first_name'=>'Student','last_name'=>'Two','roll'=>'S2','register_no'=>'R2','course_price'=>200,'course_price_discount'=>20,'adjusted_course_price'=>180,'total_amount'=>0));
             include dirname(__DIR__) . '/application/views/fees/batch_wise_student_fees_report.php';
         } else {
+            $filter_classes = array(array('id' => 10, 'name' => 'Batch 10'));
+            $filter_students = array(array('id' => 2, 'first_name' => 'Student', 'last_name' => 'Two', 'roll' => 'S2'));
+            $class_id = ''; $student_id = ''; $daterange = ''; $page_limit = '100';
+            $report_total = $report ? 1 : 0; $report_offset = 0; $pagination_links = '';
             include dirname(__DIR__) . '/application/views/fees/student_fees_report.php';
         }
     }
@@ -40,6 +44,7 @@ foreach (array('jquery/jquery.min.js', 'select2/js/select2.js', 'datatables/medi
 ?>
 <script>
 var base_url = '', failNext = false;
+$.fn.daterangepicker = function() { return this; };
 window.onerror = function(message) { document.title = 'FAIL: ' + message; };
 $.ajax = function(opts) {
     var timer = setTimeout(function() {
@@ -57,6 +62,22 @@ $.ajax = function(opts) {
 $(function() {
     $('[data-plugin-selectTwo]').select2();
     function check(ok, label) { if (!ok) throw new Error(label); }
+    if ($('#student-report-filters').length) {
+        check($('select[required], input[required]').length === 0, 'filters optional');
+        check($('#report-limit').val() === '100', 'default limit');
+        check($('#report-limit option').map(function() { return this.value; }).get().join(',') === '100,200,300,400,500,1000,all', 'limit options');
+        check(!$.fn.dataTable.isDataTable('#rowGroup'), 'server pagination replaces DataTable');
+        check($('#student_id_show option[value=2]').length === 1 && !$('#class_id').val(), 'student available without batch');
+        var submits = 0;
+        $('#student-report-filters')[0].submit = function() { submits++; };
+        $('#report-limit').val('all').trigger('change');
+        check(submits === 1, 'limit changes submit filters');
+        $('#student_id_show').val('2');
+        $('#class_id').val('10').trigger('change');
+        check(submits === 2 && $('#student_id_show').val() === '', 'batch change clears student');
+        document.title = 'PASS: optional filters and pagination UI';
+        return;
+    }
     setTimeout(function() {
         check($('#student_id_show').val() === '2', 'selected student restored');
         check($('form')[0].checkValidity(), 'form is submittable without hidden section');

@@ -32,7 +32,13 @@ class ReportViewFixture {
             $filter_students = array(array('id' => 2, 'first_name' => 'Student', 'last_name' => 'Two', 'roll' => 'S2'));
             $class_id = ''; $student_id = ''; $daterange = ''; $page_limit = '100';
             $report_total = $report ? 1 : 0; $report_offset = 0; $pagination_links = '';
-            include dirname(__DIR__) . '/application/views/fees/student_fees_report.php';
+            if (in_array('--due', $GLOBALS['argv'])) {
+                $date = '';
+                if ($report) $invoicelist = array(array('first_name'=>'Student','last_name'=>'Two','register_no'=>'R2','roll'=>'S2','mobileno'=>'','total_fees'=>200,'total_paid'=>40,'total_discount'=>10,'total_fine'=>0,'balance'=>150));
+                include dirname(__DIR__) . '/application/views/fees/due_report.php';
+            } else {
+                include dirname(__DIR__) . '/application/views/fees/student_fees_report.php';
+            }
         }
     }
 }

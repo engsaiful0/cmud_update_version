@@ -966,19 +966,75 @@ class Fees extends Admin_Controller
         if (!get_permission('fees_reports', 'is_view')) {
             access_denied();
         }
-        $branchID = $this->application_model->get_branch_id();
-        if ($this->input->post('search')) {
-            $this->data['class_id'] = $this->input->post('class_id');
-            $this->data['section_id'] = $this->input->post('section_id');
-            $this->data['invoicelist'] = $this->fees_model->getDueReport($this->data['class_id'], $this->data['section_id']);
+        $filters = array();
+        foreach (array('branch_id', 'class_id', 'student_id', 'date', 'limit') as $field) {
+            $value = $this->input->get($field);
+            $filters[$field] = is_scalar($value) ? trim((string) $value) : '';
         }
+        $branchID = is_superadmin_loggedin() ? $filters['branch_id'] : get_loggedin_branch_id();
+        $classID = $filters['class_id'];
+        $studentID = $filters['student_id'];
+        $limit = in_array($filters['limit'], array('100', '200', '300', '400', '500', '1000', 'all'), true) ? $filters['limit'] : '100';
+        $date = $filters['date'];
+        if ($date !== '') {
+            $parsed = DateTime::createFromFormat('!Y-m-d', $date);
+            if (!$parsed || $parsed->format('Y-m-d') !== $date) {
+                $this->data['report_error'] = 'Please select a valid date or leave it blank.';
+            }
+        }
+        $total = 0;
+        $offset = 0;
+        $this->data['invoicelist'] = array();
+        $this->data['pagination_links'] = '';
+        if (empty($this->data['report_error'])) {
+            $total = $this->fees_model->countDueReport($classID, $studentID, $branchID, $date);
+            $page = max(1, (int) $this->input->get('page'));
+            $page = $limit === 'all' ? 1 : min($page, max(1, (int) ceil($total / (int) $limit)));
+            $offset = $limit === 'all' ? 0 : ($page - 1) * (int) $limit;
+            $this->data['invoicelist'] = $this->fees_model->getDueReport($classID, $studentID, $branchID, $date, $limit === 'all' ? null : (int) $limit, $offset);
+            if ($limit !== 'all') {
+                $this->load->library('pagination');
+                $config = array('base_url' => base_url('fees/due_report'), 'total_rows' => $total,
+                    'per_page' => (int) $limit, 'page_query_string' => true, 'query_string_segment' => 'page',
+                    'use_page_numbers' => true, 'reuse_query_string' => true, 'cur_page' => $page,
+                    'full_tag_open' => '<ul class="pagination">', 'full_tag_close' => '</ul>',
+                    'cur_tag_open' => '<li class="active"><span>', 'cur_tag_close' => '</span></li>');
+                foreach (array('num', 'first', 'last', 'next', 'prev') as $tag) {
+                    $config[$tag . '_tag_open'] = '<li>';
+                    $config[$tag . '_tag_close'] = '</li>';
+                }
+                $this->pagination->initialize($config);
+                $this->data['pagination_links'] = $this->pagination->create_links();
+            }
+        }
+        $this->db->select('id, name')->from('class')->order_by('name', 'ASC');
+        if ($branchID !== '' && $branchID !== null) $this->db->where('branch_id', $branchID);
+        $this->data['filter_classes'] = $this->db->get()->result_array();
+        $this->db->select('id, first_name, last_name, roll')->from('student')->order_by('first_name', 'ASC');
+        if ($branchID !== '' && $branchID !== null) $this->db->where('branch_id', $branchID);
+        if ($classID !== '') $this->db->where('class_id', $classID);
+        $this->data['filter_students'] = $this->db->get()->result_array();
         $this->data['branch_id'] = $branchID;
-        $this->data['title'] = translate('due_fees_report');
+        $this->data['class_id'] = $classID;
+        $this->data['student_id'] = $studentID;
+        $this->data['date'] = $filters['date'];
+        $this->data['page_limit'] = $limit;
+        $this->data['report_total'] = $total;
+        $this->data['report_offset'] = $offset;
+        $this->data['title'] = translate('due_report');
         $this->data['sub_page'] = 'fees/due_report';
         $this->data['main_menu'] = 'fees_repots';
+        $this->data['headerelements'] = array(
+            'css' => array(
+                'vendor/daterangepicker/daterangepicker.css',
+            ),
+            'js' => array(
+                'vendor/moment/moment.js',
+                'vendor/daterangepicker/daterangepicker.js',
+            ),
+        );
         $this->load->view('layout/index', $this->data);
     }
-
     public function payment_history()
     {
         if (!get_permission('fees_reports', 'is_view')) {

@@ -300,29 +300,43 @@ class Fees_model extends MY_Model
         return $result;
     }
 
-    public function getDueReport($class_id = '', $section_id = '')
+    public function getDueReport($classID = '', $studentID = '', $branchID = '', $date = '', $limit = 100, $offset = 0)
     {
-        $this->db->select('fa.id as allocation_id,sum(gd.amount) as total_fees,e.student_id,e.roll,s.first_name,s.last_name,s.register_no,s.mobileno,c.name as class_name,se.name as section_name');
-        $this->db->from('fee_allocation as fa');
-        $this->db->join('fee_groups_details as gd', 'gd.fee_groups_id = fa.group_id', 'left');
-        $this->db->join('enroll as e', 'e.student_id = fa.student_id', 'inner');
-        $this->db->join('student as s', 's.id = e.student_id', 'left');
-        $this->db->join('class as c', 'c.id = e.class_id', 'left');
-        $this->db->join('section as se', 'se.id = e.section_id', 'left');
-        $this->db->where('fa.session_id', get_session_id());
-        $this->db->where('e.class_id', $class_id);
-        if (!empty($section_id)) {
-            $this->db->where('e.section_id', $section_id);
-        }
-        $this->db->group_by('fa.student_id');
-        $this->db->order_by('e.roll', 'asc');
-        $result = $this->db->get()->result_array();
-        foreach ($result as $key => $value) {
-            $result[$key]['payment'] = $this->getPaymentDetails($value['student_id']);
-        }
-        return $result;
+        $this->dueReportQuery($classID, $studentID, $branchID, $date);
+        $this->db->select('s.id as student_id,s.first_name,s.last_name,s.register_no,s.roll,s.mobileno,c.name as class_name,COALESCE(s.adjusted_course_price,0) as total_fees,COALESCE(p.paid,0)+COALESCE(o.paid,0) as total_paid,COALESCE(p.discount,0) as total_discount,COALESCE(p.fine,0) as total_fine,COALESCE(s.adjusted_course_price,0)-COALESCE(p.paid,0)-COALESCE(o.paid,0)-COALESCE(p.discount,0) as balance', false);
+        $this->db->order_by('s.id', 'ASC');
+        if ($limit !== null) $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
     }
 
+    public function countDueReport($classID = '', $studentID = '', $branchID = '', $date = '')
+    {
+        $this->dueReportQuery($classID, $studentID, $branchID, $date);
+        return $this->db->count_all_results();
+    }
+
+    private function dueReportQuery($classID, $studentID, $branchID, $date)
+    {
+        $this->db->select('student_id,SUM(amount) as paid,SUM(discount) as discount,SUM(fine) as fine', false)->from('fee_payment_history');
+        if ($date !== '') $this->db->where('date <=', $date);
+        $payments = $this->db->group_by('student_id')->get_compiled_select();
+        $this->db->select('roll,branch_id,SUM(amount) as paid', false)->from('transactions')->where('type', 'deposit')->where('roll !=', '');
+        if ($date !== '') $this->db->where('date <=', $date);
+        $office = $this->db->group_by(array('roll', 'branch_id'))->get_compiled_select();
+        $this->db->from('student as s');
+        $this->db->join('class as c', 'c.id = s.class_id', 'left');
+        $this->db->join('(' . $payments . ') p', 'p.student_id = s.id', 'left', false);
+        $this->db->join('(' . $office . ') o', 'o.roll = s.roll AND o.branch_id = s.branch_id', 'left', false);
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('s.branch_id', get_loggedin_branch_id());
+        } elseif ($branchID !== '' && $branchID !== null) {
+            $this->db->where('s.branch_id', $branchID);
+        }
+        if ($classID !== '') $this->db->where('s.class_id', $classID);
+        if ($studentID !== '') $this->db->where('s.id', $studentID);
+        if ($date !== '') $this->db->where('s.admission_date <=', $date);
+        $this->db->where('COALESCE(s.adjusted_course_price,0)-COALESCE(p.paid,0)-COALESCE(o.paid,0)-COALESCE(p.discount,0) > 0', null, false);
+    }
     public function getPaymentDetails($student_id = '')
     {
         $this->db->select('IFNULL(SUM(amount), 0) as total_paid, IFNULL(SUM(discount), 0) as total_discount, IFNULL(SUM(fine), 0) as total_fine');

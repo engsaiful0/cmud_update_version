@@ -356,11 +356,12 @@ class Fees_model extends MY_Model
         $result = $this->db->get()->result_array();
         return $result;
     }
-    public function getBatchWisePaymentReport($classID = '', $sectionID = '', $studentID = '', $branchID = '')
+    public function getBatchWisePaymentReport($classID = '', $studentID = '', $branchID = '')
     {
         $this->db->select('
         s.id as student_id, 
         s.first_name, 
+        s.last_name,
         s.roll,
         s.register_no, 
         s.course_price, 
@@ -379,7 +380,7 @@ class Fees_model extends MY_Model
         }
 
         // Group by student to ensure all students are included
-        $this->db->group_by('s.roll');
+        $this->db->group_by(array('s.id', 's.first_name', 's.last_name', 's.roll', 's.register_no', 's.course_price', 's.adjusted_course_price', 's.course_price_discount'));
 
         // Order by ID or any other column if necessary
         $this->db->order_by('s.roll', 'asc');

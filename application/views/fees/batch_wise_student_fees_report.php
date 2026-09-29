@@ -1,5 +1,5 @@
 <?php
-$widget = (is_superadmin_loggedin() ? 4 : 6);
+
 $currency_symbol = $global_config['currency_symbol'];
 ?>
 <div class="row">
@@ -10,6 +10,9 @@ $currency_symbol = $global_config['currency_symbol'];
             </header>
             <?php echo form_open($this->uri->uri_string(), array('class' => 'validate')); ?>
             <div class="panel-body">
+                <?php if (!empty($report_error)): ?>
+                    <div class="alert alert-danger"><?= html_escape($report_error) ?></div>
+                <?php endif; ?>
                 <div class="row">
                     <?php if (is_superadmin_loggedin()) : ?>
                         <div class="col-md-3">
@@ -18,7 +21,7 @@ $currency_symbol = $global_config['currency_symbol'];
                                 <?php
                                 $arrayBranch = $this->app_lib->getSelectList('branch');
                                 echo form_dropdown("branch_id", $arrayBranch, set_value('branch_id'), "class='form-control' id='branch_id'
-								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'");
+								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0'");
                                 ?>
                             </div>
                         </div>
@@ -28,8 +31,8 @@ $currency_symbol = $global_config['currency_symbol'];
                             <label class="control-label">Batch <span class="required">*</span></label>
                             <?php
                             $arrayClass = $this->app_lib->getClass($branch_id);
-                            echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' onchange='getStudentByBatch(this.value)'
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+                            echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' required
+								data-width='100%' data-minimum-results-for-search='0'");
                             ?>
                         </div>
                     </div>
@@ -37,56 +40,14 @@ $currency_symbol = $global_config['currency_symbol'];
                         <div class="form-group">
                             <label class="control-label">Student</label>
                             <?php
-                            $arrayClass = $this->app_lib->getClass($branch_id);
-                            echo form_dropdown("student_id", '', set_value('student_id'), "class='form-control' data-plugin-selectTwo id='student_id_show' 
-								 data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+                            echo form_dropdown("student_id", array('' => 'Select batch first'), set_value('student_id'), "class='form-control' id='student_id_show'
+								 data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='0' ");
                             ?>
                         </div>
                     </div>
 
-                    <div style="display: none;" class="col-md-<?php echo $widget; ?> mb-sm">
-                        <div class="form-group">
-                            <label class="control-label"><?= translate('section') ?> <span class="required">*</span></label>
-                            <?php
-                            $arraySection = $this->app_lib->getSections(set_value('class_id'), false);
-                            echo form_dropdown("section_id", $arraySection, set_value('section_id'), "class='form-control' id='section_id' required
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-                            ?>
-                        </div>
-                    </div>
                 </div>
-                <script>
-                    function getStudentByBatch(class_id) {
-                        alert("Student Fees Report");
-                        var branch_id = $('#branch_id').val();
-                        var student_id = $('#student_id').val();
-                        $.ajax({
-                            url: base_url + 'ajax/getStudentByBatch',
-                            type: 'POST',
-                            data: {
-                                class_id: class_id,
-                                branch_id: branch_id,
-                                student_id: student_id,
-                            },
-                            success: function(response) {
-                                console.log("response fdfdf", response);
-                                $('#student_id_show').html(response);
-                            }
-                        });
-                    }
-                </script>
-                <div class="row mb-sm">
-                    <div style="display: none;" class="col-md-4 mb-sm">
-                        <div class="form-group">
-                            <label class="control-label"><?= translate('fees_type') ?></label>
-                            <select data-plugin-selectTwo class="form-control" name="fees_type" id="feesType">
-
-                            </select>
-                        </div>
-                    </div>
-
-
-                </div>
+                <p class="help-block">Leave Student unselected to include all students in the batch.</p>
             </div>
             <footer class="panel-footer">
                 <div class="row">
@@ -98,6 +59,9 @@ $currency_symbol = $global_config['currency_symbol'];
             <?php echo form_close(); ?>
         </section>
         <?php if (isset($invoicelist)) : ?>
+            <?php if (empty($invoicelist)): ?>
+                <div class="alert alert-info">No students found for the selected batch and student.</div>
+            <?php endif; ?>
             <style type="text/css">
                 tr.group {
                     font-weight: 600 !important;
@@ -125,7 +89,7 @@ $currency_symbol = $global_config['currency_symbol'];
                 <div class="panel-body">
                     <div class="mb-md mt-md">
                         <div class="export_title"><?= translate('student_fees_reports') ?></div>
-                        <table class="table table-bordered tbr-top">
+                        <table class="table table-bordered tbr-top" id="rowGroup">
                             <thead>
                                 <tr>
                                     <th><?= translate('student') ?></th>
@@ -142,17 +106,19 @@ $currency_symbol = $global_config['currency_symbol'];
                                 <?php
                                 // Ensure these variables are initialized
                                 $count = 1;
-                                $totalamount = 0;
+                                $total_course_price = 0;
+                                $total_adjusted = 0;
                                 $totaldiscount = 0;
                                 $total_due = 0;
                                 $grand_paid=0;
 
                                 foreach ($invoicelist as $row) :
                                     $deposit_through_office_accounting = $this->fees_model->getStudentFeeDepositThroughOfficeAccount($row['roll']);
-                                    $deposit_through_office_accounting_value = $deposit_through_office_accounting['total_amount'];
+                                    $deposit_through_office_accounting_value = (float) ($deposit_through_office_accounting['total_amount'] ?? 0);
 
                                     // Update totals
-                                    $totalamount += $row['total_amount'];
+                                    $total_course_price += $row['course_price'];
+                                    $total_adjusted += $row['adjusted_course_price'];
                                     $totaldiscount += $row['course_price_discount'];
                                     $due = $row['adjusted_course_price'] - $row['total_amount']-$deposit_through_office_accounting_value;
                                     $total_due += $due;
@@ -161,7 +127,7 @@ $currency_symbol = $global_config['currency_symbol'];
                                 
                                 ?>
                                     <tr>
-                                        <td><?= htmlspecialchars($row['first_name']); ?></td>
+                                        <td><?= html_escape(trim($row['first_name'] . ' ' . $row['last_name'])); ?></td>
                                         <td><?= htmlspecialchars($row['roll']); ?></td>
                                         <td><?= htmlspecialchars($row['register_no']); ?></td>
                                         <td>
@@ -178,9 +144,7 @@ $currency_symbol = $global_config['currency_symbol'];
                                                 : ''; ?>
                                         </td>
                                         <td>
-                                            <?= !empty($row['total_amount'])
-                                                ? htmlspecialchars($currency_symbol . number_format($row['total_amount']+$deposit_through_office_accounting_value, 2, '.', ''))
-                                                : ''; ?>
+                                            <?= htmlspecialchars($currency_symbol . number_format($row['total_amount']+$deposit_through_office_accounting_value, 2, '.', '')); ?>
                                         </td>
                                         <td>
                                             <?= isset($due) && $due !== ''
@@ -193,10 +157,12 @@ $currency_symbol = $global_config['currency_symbol'];
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <th colspan="2"></th>
+                                    <th></th>
+                                    <th></th>
                                     <th><?= translate('Total') ?></th>
+                                    <th><?= htmlspecialchars($currency_symbol . number_format($total_course_price, 2, '.', '')); ?></th>
                                     <th><?= htmlspecialchars($currency_symbol . number_format($totaldiscount, 2, '.', '')); ?></th>
-                                    <th><?= htmlspecialchars($currency_symbol . number_format($totalamount, 2, '.', '')); ?></th>
+                                    <th><?= htmlspecialchars($currency_symbol . number_format($total_adjusted, 2, '.', '')); ?></th>
                                     <th><?= htmlspecialchars($currency_symbol . number_format($grand_paid, 2, '.', '')); ?></th>
                                     <th><?= htmlspecialchars($currency_symbol . number_format($total_due, 2, '.', '')); ?></th>
                                 </tr>
@@ -212,6 +178,12 @@ $currency_symbol = $global_config['currency_symbol'];
 
 <script type="text/javascript">
     $(document).ready(function() {
+        $('#class_id').select2({
+            theme: 'bootstrap',
+            width: '100%',
+            minimumResultsForSearch: 0
+        });
+        if ($('#rowGroup').length) {
         $('#rowGroup').DataTable({
             dom: '<"row"<"col-sm-6 mb-xs"B><"col-sm-6"f>><"table-responsive"t>p',
             autoWidth: false,
@@ -219,13 +191,6 @@ $currency_symbol = $global_config['currency_symbol'];
             order: [
                 [0, 'asc']
             ],
-            rowGroup: {
-                dataSrc: 0
-            },
-            columnDefs: [{
-                targets: [0],
-                visible: false
-            }],
             "buttons": [{
                     extend: 'copyHtml5',
                     text: '<i class="far fa-copy"></i>',
@@ -300,56 +265,61 @@ $currency_symbol = $global_config['currency_symbol'];
         });
 
 
-        var branchID = "<?= $branch_id ?>";
-        var typeID = "<?= set_value('fees_type') ?>";
-        var classID = "<?= set_value('class_id') ?>";
-        var sectionID = "<?= set_value('section_id') ?>";
-        getTypeByBranch(branchID, typeID);
-        getStudentByClass(branchID, classID, sectionID);
-
-        $('#branch_id').on('change', function() {
-            var branchID = $(this).val();
-            getClassByBranch(branchID);
-            getTypeByBranch(branchID);
-
-        });
-
-        $('#section_id').on('change', function() {
-            var section_id = $(this).val();
-            var class_id = $('#class_id').val();
-            var branch_id = ($("#branch_id").length ? $('#branch_id').val() : "");
-            getStudentByClass(branch_id, class_id, section_id);
-        });
-
-        function getStudentByClass(branch_id, class_id, section_id) {
-            var student_id = "<?= set_value('student_id') ?>";
-            $.ajax({
-                url: base_url + 'ajax/getStudentByClass',
-                type: 'POST',
-                data: {
-                    branch_id: branch_id,
-                    class_id: class_id,
-                    section_id: section_id,
-                    student_id: student_id
-                },
-                success: function(data) {
-                    $('#student_id').html(data);
-                }
-            });
         }
+        var studentRequest, batchRequest;
+		var $filter = $('button[name="search"]');
+		loadReportStudents();
 
-        function getTypeByBranch(branchID, typeID) {
-            $.ajax({
-                url: base_url + 'fees/getTypeByBranch',
-                type: 'POST',
-                data: {
-                    'branch_id': branchID,
-                    'type_id': typeID
-                },
-                success: function(data) {
-                    $('#feesType').html(data);
-                }
-            });
-        }
-    });
+		$('#branch_id').on('change', function() {
+			if (studentRequest) studentRequest.abort();
+			if (batchRequest) batchRequest.abort();
+			$('#student_id_show').empty().trigger('change');
+			$('#class_id').empty().prop('disabled', true).trigger('change.select2');
+			$filter.prop('disabled', true);
+			batchRequest = $.ajax({
+				url: base_url + 'ajax/getClassByBranch',
+				type: 'POST',
+				data: {branch_id: $(this).val()},
+				success: function(data) {
+					$('#class_id').html(data).prop('disabled', false).trigger('change');
+				},
+				error: function(xhr, status) {
+					if (status !== 'abort') {
+						$('#class_id').append($('<option>', {value: '', text: 'Unable to load batches. Select the branch again.'})).prop('disabled', false).trigger('change.select2');
+					}
+				}
+			});
+		});
+
+		$('#class_id').on('change', function() {
+			loadReportStudents('');
+		});
+
+
+		function loadReportStudents(studentID) {
+			if (studentRequest) studentRequest.abort();
+			var $students = $('#student_id_show');
+			$students.empty().prop('disabled', true).trigger('change');
+			$filter.prop('disabled', true);
+			studentRequest = $.ajax({
+				url: base_url + 'ajax/getStudentByBatch',
+				type: 'POST',
+				dataType: 'html',
+				data: {
+					branch_id: $('#branch_id').length ? $('#branch_id').val() : <?= json_encode($branch_id) ?>,
+					class_id: $('#class_id').val(),
+					student_id: typeof studentID === 'undefined' ? <?= json_encode(set_value('student_id')) ?> : studentID
+				},
+				success: function(data) {
+					$students.html(data).prop('disabled', false).trigger('change');
+					$filter.prop('disabled', false);
+				},
+				error: function(xhr, status) {
+					if (status !== 'abort') {
+						$students.empty().append($('<option>', {value: '', text: 'Unable to load students. Please select the batch again.'})).prop('disabled', false).trigger('change');
+					}
+				}
+			});
+		}
+	});
 </script>

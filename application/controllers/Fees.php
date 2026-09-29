@@ -1017,14 +1017,15 @@ class Fees extends Admin_Controller
         $branchID = $this->application_model->get_branch_id();
         if ($this->input->post('search')) {
             $classID = $this->input->post('class_id');
-            $sectionID = $this->input->post('section_id');
             $studentID = $this->input->post('student_id');
-            $typeID = $this->input->post('fees_type');
-
-            $this->data['invoicelist'] = $this->fees_model->getBatchWisePaymentReport($classID, $sectionID, $studentID, $branchID);
-            // echo '<pre>';
-            // print_r($this->data['invoicelist']);
-            // die;
+            if (!$branchID || !$classID || !ctype_digit((string) $classID) ||
+                !$this->db->where(array('id' => $classID, 'branch_id' => $branchID))->count_all_results('class')) {
+                $this->data['report_error'] = 'Please select a valid branch and batch.';
+            } elseif ($studentID && !$this->db->where(array('id' => $studentID, 'class_id' => $classID, 'branch_id' => $branchID))->count_all_results('student')) {
+                $this->data['report_error'] = 'Please select a student from the selected batch.';
+            } else {
+                $this->data['invoicelist'] = $this->fees_model->getBatchWisePaymentReport($classID, $studentID, $branchID);
+            }
         }
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('batch_wise_student_fees_report');

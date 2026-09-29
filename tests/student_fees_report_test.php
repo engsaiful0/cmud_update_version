@@ -78,3 +78,21 @@ foreach (array(
     check(isset($controller->data['report_error']) === $case[3], 'controller validation ' . json_encode($case));
     check(isset($controller->data['invoicelist']) !== $case[3], 'query runs only for valid filters');
 }
+
+// Batch summaries must keep separate students even when roll values match.
+$connection->insert('student', array('id' => 5, 'branch_id' => 1, 'class_id' => 10, 'session_id' => 4, 'first_name' => 'Unpaid'));
+$connection->insert('fee_payment_history', array('id' => 5, 'student_id' => 1, 'amount' => 25, 'date' => '2025-01-22'));
+$connection->query("SET SESSION sql_mode = CONCAT_WS(',', @@sql_mode, 'ONLY_FULL_GROUP_BY')");
+$rows = $model->getBatchWisePaymentReport(10, '', 1);
+check(count($rows) === 3, 'batch summary keeps students with duplicate rolls and includes unpaid students');
+$byStudent = array_column($rows, null, 'student_id');
+check($byStudent[1]['total_amount'] == 125 && $byStudent[2]['total_amount'] == 100 && $byStudent[5]['total_amount'] == 0, 'batch payments aggregate per student under strict SQL grouping');
+check(count($model->getBatchWisePaymentReport(10, 2, 1)) === 1, 'batch summary student filter');
+check(count($model->getBatchWisePaymentReport(10, 3, 1)) === 0, 'batch summary excludes other branches');
+foreach (array(array(10, '', false), array(10, 2, false), array(10, 3, true), array('', '', true), array(999, '', true)) as $case) {
+    $controller->data = array();
+    $controller->input->values = array('search' => 1, 'class_id' => $case[0], 'student_id' => $case[1]);
+    $controller->batch_wise_student_fees_report();
+    check(isset($controller->data['report_error']) === $case[2], 'batch controller validation ' . json_encode($case));
+    check(isset($controller->data['invoicelist']) !== $case[2], 'batch query runs only for valid filters');
+}

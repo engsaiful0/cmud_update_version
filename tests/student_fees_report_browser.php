@@ -15,15 +15,21 @@ function form_dropdown($name, $options, $selected, $attrs) {
 }
 function _d($s) { return $s; }
 class ReportViewFixture {
-    public $uri, $app_lib;
-    public function __construct() { $this->uri = $this; $this->app_lib = $this; }
+    public $uri, $app_lib, $fees_model;
+    public function __construct() { $this->uri = $this; $this->app_lib = $this; $this->fees_model = $this; }
+    public function getStudentFeeDepositThroughOfficeAccount($roll) { return array('total_amount' => 40); }
     public function uri_string() { return ''; }
     public function getSelectList($table) { return array('' => 'Select', 1 => 'Branch 1', 2 => 'Branch 2'); }
     public function getClass($branch) { return array('' => 'Select', 10 => 'Batch 10', 20 => 'Batch 20'); }
     public function render($report) {
         $global_config = array('currency_symbol' => 'Tk', 'animations' => ''); $branch_id = 1;
         if ($report) $invoicelist = array(array('first_name'=>'Student','last_name'=>'Two','register_no'=>'R2','date'=>'2025-01-21','pay_via'=>'Cash','amount'=>100,'discount'=>5,'fine'=>2));
-        include dirname(__DIR__) . '/application/views/fees/student_fees_report.php';
+        if (in_array('--batch', $GLOBALS['argv'])) {
+            if ($report) $invoicelist = array(array('first_name'=>'Student','last_name'=>'Two','roll'=>'S2','register_no'=>'R2','course_price'=>200,'course_price_discount'=>20,'adjusted_course_price'=>180,'total_amount'=>0));
+            include dirname(__DIR__) . '/application/views/fees/batch_wise_student_fees_report.php';
+        } else {
+            include dirname(__DIR__) . '/application/views/fees/student_fees_report.php';
+        }
     }
 }
 ob_start();
@@ -73,7 +79,15 @@ $(function() {
                     $('#class_id').trigger('change');
                     setTimeout(function() {
                         check(!$('button[name=search]').prop('disabled'), 'retry recovers');
-                        if ($('#rowGroup').length) check($.fn.dataTable.isDataTable('#rowGroup'), 'report table initialized');
+                        if ($('#rowGroup').length) {
+                            check($.fn.dataTable.isDataTable('#rowGroup'), 'report table initialized');
+                            if ($('#rowGroup thead th').length === 8) {
+                                check($('#rowGroup tbody td').eq(6).text().trim() === 'Tk40.00', 'office-only payments displayed');
+                                var totals = $('#rowGroup tfoot th').map(function() { return $(this).text().trim(); }).get();
+                                check(JSON.stringify(totals.slice(3)) === JSON.stringify(['Tk200.00','Tk20.00','Tk180.00','Tk40.00','Tk140.00']), 'batch footer totals align with columns');
+                                check($('#rowGroup tbody td').first().text() === 'Student Two', 'full student name displayed');
+                            }
+                        }
                         document.title = 'PASS: report UI checks';
                     }, 40);
                 }, 40);

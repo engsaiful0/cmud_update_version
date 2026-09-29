@@ -244,14 +244,25 @@ class Fees_model extends MY_Model
         }
     }
 
-    public function getInvoiceList($class_id = '', $student_id = '', $roll = '', $branch_id = '')
+    public function getInvoiceList($class_id = '', $student_id = '', $roll = '', $branch_id = '', $limit = 100, $offset = 0)
     {
-        // print_r('$class_id='.$class_id);
-        // print_r('$student_id='.$student_id);
-        // print_r('$roll='.$roll);
-        // print_r('$branch_id='.$branch_id);
-        // die;
         $this->db->select('s.id as student_id,s.roll,sub.name as subject_name,s.first_name,s.last_name,s.register_no,s.mobileno,c.name as class_name');
+        $this->invoiceListQuery($class_id, $student_id, $roll, $branch_id);
+        $this->db->join('class as c', 'c.id = s.class_id', 'left');
+        $this->db->join('subject as sub', 'sub.id = s.subject_id', 'left');
+        $this->db->order_by('s.id', 'asc');
+        $this->db->limit($limit, $offset);
+        return $this->db->get()->result_array();
+    }
+
+    public function countInvoices($class_id = '', $student_id = '', $roll = '', $branch_id = '')
+    {
+        $this->invoiceListQuery($class_id, $student_id, $roll, $branch_id);
+        return $this->db->count_all_results();
+    }
+
+    private function invoiceListQuery($class_id, $student_id, $roll, $branch_id)
+    {
         $this->db->from('student as s');
         if ($student_id != '') {
             $this->db->where('s.id', $student_id);
@@ -259,18 +270,14 @@ class Fees_model extends MY_Model
         if ($roll != '') {
             $this->db->where('s.roll', $roll);
         }
-        if ($class_id != '' && $branch_id != '') {
+        if (!is_superadmin_loggedin()) {
+            $this->db->where('s.branch_id', get_loggedin_branch_id());
+        } elseif ($branch_id != '') {
             $this->db->where('s.branch_id', $branch_id);
+        }
+        if ($class_id != '') {
             $this->db->where('s.class_id', $class_id);
         }
-        $this->db->join('class as c', 'c.id = s.class_id', 'left');
-        $this->db->join('subject as sub', 'sub.id = s.subject_id', 'left');
-        $this->db->order_by('s.id', 'asc');
-        $result = $this->db->get()->result_array();
-        // print_r($result);
-        // die;
-
-        return $result;
     }
 
     public function getDueInvoiceList($class_id = '', $section_id = '', $feegroup_id = '', $fee_feetype_id = '')

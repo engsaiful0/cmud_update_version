@@ -162,7 +162,7 @@ $csrfHash = $this->security->get_csrf_hash();
 					<div class="col-md-3 mb-sm">
 						<div class="form-group">
 							<label class="control-label">Student ID</label>
-							<input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control">
+							<input placeholder="Type student ID.." type="text" name="roll" id="roll" class="form-control" value="<?= html_escape($roll ?? '') ?>">
 						</div>
 					</div>
 
@@ -192,7 +192,8 @@ $csrfHash = $this->security->get_csrf_hash();
 				<div class="panel-body">
 					<div class="mb-md mt-md">
 						<div class="export_title"><?= translate('invoice') . " " . translate('list') ?></div>
-						<table class="table table-bordered table-condensed table-hover mb-none tbr-top table-export">
+						<div class="table-responsive">
+						<table class="table table-bordered table-condensed table-hover mb-none tbr-top">
 							<thead>
 								<tr>
 									<th class="hidden-print">
@@ -214,6 +215,9 @@ $csrfHash = $this->security->get_csrf_hash();
 								</tr>
 							</thead>
 							<tbody>
+								<?php if (empty($invoicelist)): ?>
+									<tr><td colspan="8" class="text-center">No invoices found.</td></tr>
+								<?php endif; ?>
 								<?php
 								$count = 1;
 								foreach ($invoicelist as $row) :
@@ -264,6 +268,9 @@ $csrfHash = $this->security->get_csrf_hash();
 								<?php endforeach; ?>
 							</tbody>
 						</table>
+						</div>
+						<p class="mt-md">Showing <?= $invoice_total > 0 ? $invoice_offset + 1 : 0 ?>–<?= $invoice_offset + count($invoicelist) ?> of <?= $invoice_total ?> invoices</p>
+						<?= $pagination_links ?>
 					</div>
 				</div>
 				<?php echo form_close(); ?>
